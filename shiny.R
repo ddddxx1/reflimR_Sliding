@@ -62,15 +62,37 @@ ui <- fluidPage(
                         value = 1,
                         step = 1,
                         animate = animationOptions(interval = 1000, loop = TRUE)),
-            numericInput("standardabweichung",
-                         "Standardabweichung:",
-                         value = 5),
+            # numericInput("standardabweichung",
+            #              "Standardabweichung:",
+            #              value = 5),
             numericInput("window_size",
                          "Window Size:",
                          value = NULL),
             numericInput("step_width",
                          "Step Width:",
-                         value = NULL)
+                         value = NULL),
+            # for gaussian
+            conditionalPanel(
+              condition = "input.verteilung == 'gaussian'",
+              numericInput("standardabweichung",
+                           "Standardabweichung:",
+                           value = 5)
+            ),
+            # for triangular
+            conditionalPanel(
+              condition = "input.verteilung == 'triangular'",
+              numericInput("a", "Parameter a:", value = 0),
+              numericInput("b", "Paramater b:", value = 0.5),
+              numericInput("c", "Paramater c:", value = 1)
+            ),
+            # for trapezoidal
+            conditionalPanel(
+              condition = "input.verteilung == 'trapezoidal'",
+              numericInput("a_trap", "Parameter a:", value = 0),
+              numericInput("b_trap", "Parameter b:", value = 0.25),
+              numericInput("c_trap", "Parameter c:", value = 0.75),
+              numericInput("d_trap", "Parameter d:", value = 1)
+            )
         ),
 
         mainPanel(
@@ -83,6 +105,7 @@ ui <- fluidPage(
     )
 )
 
+# 调用了run / w_sliding.reflim.plot
 server <- function(input, output, session) {
 
     # uploaded_data <- reactive({
@@ -131,11 +154,11 @@ server <- function(input, output, session) {
         user_x <- user_data$x
         user_t <- user_data$t
 
-        if (is.na(input$standardabweichung)) {
-            standardabweichung <- NULL
-        } else {
-            standardabweichung <- input$standardabweichung
-        }
+        # if (is.na(input$standardabweichung)) {
+        #     standardabweichung <- NULL
+        # } else {
+        #     standardabweichung <- input$standardabweichung
+        # }
         if (is.na(input$window_size)) {
             window_size <- NULL
         } else {
@@ -146,12 +169,44 @@ server <- function(input, output, session) {
         } else {
             step_width <- input$step_width
         }
+        
+        # standardabweichung <- if(input$verteilung == "gaussian") input$standardabweichung
+        # a <- if (input$verteilung == "triangular") input$a
+        # b <- if (input$verteilung == "triangular") input$b
+        # c <- if (input$verteilung == "triangular") input$c
+        # a_trap <- if (input$verteilung == "trapezoidal") input$a_trap
+        # b_trap <- if (input$verteilung == "trapezoidal") input$b_trap
+        # c_trap <- if (input$verteilung == "trapezoidal") input$c_trap
+        # d_trap <- if (input$verteilung == "trapezoidal") input$d_trap
+
+        standardabweichung <- input$standardabweichung
+        a <- input$a
+        b <- input$b
+        c <- input$c
+        a_trap <- input$a_trap
+        b_trap <- input$b_trap
+        c_trap <- input$c_trap
+        d_trap <- input$d_trap
+        
 
         result <- tryCatch({
+          if (input$verteilung == "gaussian") {
             res <- w_sliding.reflim.plot(user_x, user_t, verteilung = input$verteilung,
                                          standard_deviation = standardabweichung,
                                          window.size = window_size,
                                          step.width = step_width)
+          } else if (input$verteilung == "triangular") {
+            res <- w_sliding.reflim.plot(user_x, user_t, verteilung = input$verteilung,
+                                         a = a, b = b, c = c,
+                                         window.size = window_size,
+                                         step.width = step_width)
+          } else if (input$verteilung == "trapezoidal") {
+            res <- w_sliding.reflim.plot(user_x, user_t, verteilung = input$verteilung,
+                                         a = a_trap, b = b_trap, c = c_trap, d = d_trap,
+                                         window.size = window_size,
+                                         step.width = step_width)
+          }
+            
 
             # 计算段索引
             segment_indices <- which(res$x == "---") - 1
@@ -205,8 +260,8 @@ server <- function(input, output, session) {
     output$errorMessage <- renderText({
         data_info <- data()
         if (!is.null(data_info$error)) {
-            return(paste("Error: Error in function w_sliding.reflim.plot")) # error
-          # return(paste("Error:", data_info$error))
+            # return(paste("Error: Error in function w_sliding.reflim.plot")) # error
+          return(paste("Error:", data_info$error))
         }
         return(NULL)
     })
@@ -303,9 +358,10 @@ shinyApp(ui = ui, server = server)
 
 ##### function #####
 
-w_sliding.reflim.plot <- function(x,covariate,verteilung = "gaussian", standard_deviation = 5, window.size=NULL,step.width=NULL,lognormal=NULL,perc.trunc=2.5,n.min.window=200,n.min=100,apply.rounding=FALSE)
+# 需要加权函数参数
+w_sliding.reflim.plot <- function(x,covariate,verteilung = "gaussian", standard_deviation = 5, a = NULL, b = NULL, c = NULL, d = NULL, window.size=NULL,step.width=NULL,lognormal=NULL,perc.trunc=2.5,n.min.window=200,n.min=100,apply.rounding=FALSE)
 {
-    print(paste("sd = ", standard_deviation))
+    # print(paste("sd = ", standard_deviation))
     
     is.nona <- !is.na(x) & !is.na(covariate)
     xx <- x[is.nona]
@@ -354,7 +410,7 @@ w_sliding.reflim.plot <- function(x,covariate,verteilung = "gaussian", standard_
     
     sum.www <- rep(NA, n.steps)
     
-    a <- 0
+    loop <- 0
 
     
     if (!is.null(window.size) & !is.null(step.width)) {
@@ -377,23 +433,41 @@ w_sliding.reflim.plot <- function(x,covariate,verteilung = "gaussian", standard_
                     w_function <- makeWeightFunction(verteilung, sigma = standard_deviation)
                     www <- w_function(interval_cov, mean = median(interval_cov))
                 } else if (verteilung == "triangular") {
-                    a.value <- min(interval_cov)
-                    b.value <- median(interval_cov)
-                    c.value <- max(interval_cov)
+                  a <- if (is.null(a)) 0 else a
+                  b <- if (is.null(b)) 0.5 else b
+                  c <- if (is.null(c)) 1 else c
+                  
+                  a.value <- quantile(interval_cov, a)
+                  b.value <- quantile(interval_cov, b)
+                  c.value <- quantile(interval_cov, c)
+                  
+                    # a.value <- min(interval_cov)
+                    # b.value <- median(interval_cov)
+                    # c.value <- max(interval_cov)
                     w_function <- makeWeightFunction(verteilung, a = a.value, b = b.value, c = c.value)
                     www <- w_function(interval_cov)
                 } else if (verteilung == "trapezoidal") {
-                    a.value <- min(interval_cov)
-                    b.value <- quantile(interval_cov, 0.25)
-                    c.value <- quantile(interval_cov, 0.75)
-                    d.value <- max(interval_cov)
+                  a <- if (is.null(a)) 0 else a
+                  b <- if (is.null(b)) 0.25 else b
+                  c <- if (is.null(c)) 0.75 else c
+                  d <- if (is.null(d)) 1 else d
+                  
+                  a.value <- quantile(interval_cov, a)
+                  b.value <- quantile(interval_cov, b)
+                  c.value <- quantile(interval_cov, c)
+                  d.value <- quantile(interval_cov, d)
+                  
+                    # a.value <- min(interval_cov)
+                    # b.value <- quantile(interval_cov, 0.25)
+                    # c.value <- quantile(interval_cov, 0.75)
+                    # d.value <- max(interval_cov)
                     
                     w_function <- makeWeightFunction(distribution = verteilung, a = a.value, b = b.value, c = c.value, d = d.value)
                     www <- w_function(interval_cov)
                 }
                 w.interval[[i]] <- www
                 
-                a <- a + 1
+                # loop <- loop + 1
                 
                 # plot(interval_cov, www, type = "l", col = "blue", lwd = 2, main = "www VS interval_cov")
                 # points(interval_cov, www, col = "red")
@@ -407,6 +481,7 @@ w_sliding.reflim.plot <- function(x,covariate,verteilung = "gaussian", standard_
                 
                 if (sum.www[i] > 100) {
                     res.reflim <- w_reflim(xxx, www, n.min = n.min, apply.rounding = apply.rounding, lognormal = lognormal, plot.all = TRUE)
+                    loop <- loop + 1
                     
                     
                     # lower.lim[i] <- res.reflim$limits[1]
@@ -444,11 +519,12 @@ w_sliding.reflim.plot <- function(x,covariate,verteilung = "gaussian", standard_
         ind <- 1
         indl <- 1
         indr <- 2
-        # a <- 0
+        # loop <- 0
         while(indr <= length(cov.unique)) {
-          print("loading...")
+          # print("in while")
             is.in.interval <- covcomp >= cov.unique[indl] & covcomp < cov.unique[indr]
 
+            # print(sum(is.in.interval) >= n.min.window)
             if (sum(is.in.interval) >= n.min.window) {
                 
                 # print(covcomp[is.in.interval])
@@ -462,19 +538,50 @@ w_sliding.reflim.plot <- function(x,covariate,verteilung = "gaussian", standard_
                     w_function <- makeWeightFunction(verteilung, sigma = standard_deviation)
                     www <- w_function(interval_cov, mean = as.numeric(median(interval_cov)))
                 } else if (verteilung == "triangular") {
-                    a.value <- min(interval_cov)
-                    b.value <- median(interval_cov)
-                    c.value <- max(interval_cov)
-                    w_function <- makeWeightFunction(verteilung, a = a.value, b = b.value, c = c.value)
+                  a <- if (is.null(a)) 0 else a
+                  b <- if (is.null(b)) 0.5 else b
+                  c <- if (is.null(c)) 1 else c
+                  
+                  a.value <- quantile(interval_cov, a)
+                  b.value <- quantile(interval_cov, b)
+                  c.value <- quantile(interval_cov, c)
+                  
+                    # a.value <- min(interval_cov)
+                    # b.value <- median(interval_cov)
+                    # c.value <- max(interval_cov)
+                    w_function <- makeWeightFunction(verteilung, a = a.value, b = b.value, c = c.value) # 需要加权函数参数
                     www <- w_function(interval_cov)
                 } else if (verteilung == "trapezoidal") {
-                    a.value <- min(interval_cov)
-                    b.value <- quantile(interval_cov, 0.25)
-                    c.value <- quantile(interval_cov, 0.75)
-                    d.value <- max(interval_cov)
+                  a <- if (is.null(a)) 0 else a
+                  b <- if (is.null(b)) 0.25 else b
+                  c <- if (is.null(c)) 0.75 else c
+                  d <- if (is.null(d)) 1 else d
+                  
+                  # print(paste("a,", a))
+                  # print(paste("b,", b))
+                  # print(paste("c,", c))
+                  # print(paste("d,", d))
+                  
+                  a.value <- quantile(interval_cov, a)
+                  b.value <- quantile(interval_cov, b)
+                  c.value <- quantile(interval_cov, c)
+                  d.value <- quantile(interval_cov, d)
+                  
+                  
+                  # print(paste("a.value ", a.value))
+                  # print(paste("b.value ", b.value))
+                  # print(paste("c.value ", c.value))
+                  # print(paste("d.value ", d.value))
+                  
+                    # a.value <- min(interval_cov)
+                    # b.value <- quantile(interval_cov, 0.25)
+                    # c.value <- quantile(interval_cov, 0.75)
+                    # d.value <- max(interval_cov)
                     
                     w_function <- makeWeightFunction(distribution = verteilung, a = a.value, b = b.value, c = c.value, d = d.value)  # todo
+                    # print(w_function)
                     www <- w_function(interval_cov)
+                    # print(www)
                 }
                 w.interval[[ind]] <- www 
 
@@ -485,7 +592,8 @@ w_sliding.reflim.plot <- function(x,covariate,verteilung = "gaussian", standard_
                 # print(length(t.interval[[ind]]))
                 # print(length(w.interval[[ind]]))
                 # print("--")
-                a <- a + 1
+                
+                # loop <- loop + 1
                 
                 # www <- w_function(interval_cov, mean = median(interval_cov))
                 
@@ -493,6 +601,7 @@ w_sliding.reflim.plot <- function(x,covariate,verteilung = "gaussian", standard_
                 # plot(interval_cov, www, type = "l", col = "blue", lwd = 2, main = "www VS interval_cov")
                 # points(interval_cov, www, col = "red")
                 www_sum <- sum(www)
+                # print(paste("www_sum", www_sum))
                 # text(x = mean(interval_cov), y = mean(www), 
                 #      labels = paste("Sum of www =", round(www_sum, 2)),
                 #      col = "darkgreen", cex = 1.5, font = 2)
@@ -504,8 +613,9 @@ w_sliding.reflim.plot <- function(x,covariate,verteilung = "gaussian", standard_
                 #     indr <- indr + 1
                 # }
                 
-                if (sum.www[ind] > 100) {
+                if (sum.www[ind] > 100) { # ERROR -> null
                     res.reflim <- w_reflim(xxx, www, n.min = n.min, apply.rounding = apply.rounding, lognormal = lognormal, plot.all = TRUE)
+                    loop <- loop + 1
                     # print(res.reflim)
                     
                     # lower.lim[ind] <- res.reflim$limits[1]
@@ -531,6 +641,7 @@ w_sliding.reflim.plot <- function(x,covariate,verteilung = "gaussian", standard_
                     indl <- indl + 1
                     indr <- indr + 1
                     ind <- ind + 1
+                    # print(paste("ind", ind))
                 } else {
                     indr <- indr + 1
                 }
@@ -546,11 +657,11 @@ w_sliding.reflim.plot <- function(x,covariate,verteilung = "gaussian", standard_
     # res <- res[!is.na(covariate.n),]
     # return(res)
     
-    print(paste("Schleifenzeiten = ", a))
+    print(paste("Schleifenzeiten = ", loop))
     res <- data.frame()
     
 
-    for (i in 1:a) {
+    for (i in 1:loop) {
         temp_df <- data.frame(
             x = x.interval[[i]],
             t = t.interval[[i]],

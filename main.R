@@ -53,11 +53,11 @@ main <- function() {
   
 }
 
-
-run <- function(x, t, verteilung = "gaussian", standardabweichung = 5, window.size=NULL,step.width=NULL,lognormal=NULL,perc.trunc=2.5,n.min.window=200,n.min=100,apply.rounding=FALSE) {
+# 需要分布函数参数  完成
+run <- function(x, t, verteilung = "gaussian", standardabweichung = 5, a = NULL, b = NULL, c = NULL, d = NULL, window.size=NULL,step.width=NULL,lognormal=NULL,perc.trunc=2.5,n.min.window=200,n.min=100,apply.rounding=FALSE) {
     if (verteilung == "gaussian") {
         if (standardabweichung == 5) {
-            res <- w_sliding.reflim(x, t,verteilung = verteilung, window.size = window.size, step.width = step.width, lognormal = lognormal)
+            res <- w_sliding.reflim(x, t,verteilung = verteilung, window.size = window.size, step.width = step.width, lognormal = lognormal)  # 需要分布函数参数
             alist(result.sliding.reflim = res)
         } else {
             res <- w_sliding.reflim(x, t, verteilung = verteilung, window.size = window.size, step.width = step.width, lognormal = lognormal)
@@ -66,7 +66,7 @@ run <- function(x, t, verteilung = "gaussian", standardabweichung = 5, window.si
             alist1(res, res1)
         }
     } else {
-        res <- w_sliding.reflim(x, t, verteilung = verteilung, window.size = window.size, step.width = step.width, lognormal = lognormal)
+        res <- w_sliding.reflim(x, t, verteilung = verteilung, a = a, b = b, c = c, d = d, window.size = window.size, step.width = step.width, lognormal = lognormal)
         alist(result.sliding.reflim = res)
     }
 }
@@ -235,7 +235,9 @@ alist1 <- function(result.sliding.reflim1, result.sliding.reflim2, use.mean=T, x
 # }
 
 
-
+# a: 三角形左端点
+# b: 三角形最高点
+# c: 三角形右端点
 dtriang <- function(x, a, b, c) {
     # if (x < a || x > c) return(0)
     # if (x <= b) {
@@ -249,6 +251,11 @@ dtriang <- function(x, a, b, c) {
     return(y)
 }
 
+
+# a: 左端点
+# b: 左水平点
+# c: 右水平点
+# d: 右端点
 dtrapezoid <- function(x, a, b, c, d) {
     # if (x < a || x > d) return(0)
     # if (x <= b) {
@@ -271,7 +278,7 @@ makeWeightFunction <- function(distribution = "gaussian", ...) {
         if (is.null(sigma)) {
             sigma <- 5
         }
-        return(function(x, mean) { # 只需要sd， mean会自动改变 todo
+        return(function(x, mean) { # mean将区间内x的中位数传入，不需要用户自己更改
             dnorm(x, mean = mean, sd = sigma) / dnorm(mean, mean = mean, sd = sigma)
         })
     } else if (distribution == "triangular") {
@@ -301,8 +308,8 @@ makeWeightFunction <- function(distribution = "gaussian", ...) {
 
 
 
-
-w_sliding.reflim <- function(x,covariate,verteilung = "gaussian", standard_deviation = 5, window.size=NULL,step.width=NULL,lognormal=NULL,perc.trunc=2.5,n.min.window=200,n.min=100,apply.rounding=FALSE)
+# 需要添加分布函数参数 已完成
+w_sliding.reflim <- function(x,covariate,verteilung = "gaussian", standard_deviation = 5, a = NULL, b = NULL, c = NULL, d = NULL, window.size=NULL,step.width=NULL,lognormal=NULL,perc.trunc=2.5,n.min.window=200,n.min=100,apply.rounding=FALSE)
 {
     # print("x")
     # print(x)
@@ -382,16 +389,39 @@ w_sliding.reflim <- function(x,covariate,verteilung = "gaussian", standard_devia
                     w_function <- makeWeightFunction(verteilung, sigma = standard_deviation)
                     www <- w_function(interval_cov, mean = median(interval_cov))
                 } else if (verteilung == "triangular") {
-                    a.value <- min(interval_cov)
-                    b.value <- median(interval_cov)
-                    c.value <- max(interval_cov)
-                    w_function <- makeWeightFunction(verteilung, a = a.value, b = b.value, c = c.value)
+                  a <- if (is.null(a)) 0 else a
+                  b <- if (is.null(b)) 0.5 else b
+                  c <- if (is.null(c)) 1 else c
+                  
+                  a.value <- quantile(interval_cov, a)
+                  b.value <- quantile(interval_cov, b)
+                  c.value <- quantile(interval_cov, c)
+                  
+                  # print(paste("a.value =", a.value))
+                  # print(paste("b.value =", b.value))
+                  # print(paste("c.value =", c.value))
+                  # print("---")
+                  
+                    # a.value <- min(interval_cov)
+                    # b.value <- median(interval_cov)
+                    # c.value <- max(interval_cov)
+                    w_function <- makeWeightFunction(verteilung, a = a.value, b = b.value, c = c.value)  # 这里需要分布函数参数
                     www <- w_function(interval_cov)
                 } else if (verteilung == "trapezoidal") {
-                    a.value <- min(interval_cov)
-                    b.value <- quantile(interval_cov, 0.25)
-                    c.value <- quantile(interval_cov, 0.75)
-                    d.value <- max(interval_cov)
+                  a <- if (is.null(a)) 0 else a
+                  b <- if (is.null(b)) 0.25 else b
+                  c <- if (is.null(c)) 0.75 else c
+                  d <- if (is.null(d)) 1 else d
+                  
+                  a.value <- quantile(interval_cov, a)
+                  b.value <- quantile(interval_cov, b)
+                  c.value <- quantile(interval_cov, c)
+                  d.value <- quantile(interval_cov, d)
+                  
+                    # a.value <- min(interval_cov)
+                    # b.value <- quantile(interval_cov, 0.25) 
+                    # c.value <- quantile(interval_cov, 0.75)
+                    # d.value <- max(interval_cov)     
                     
                     w_function <- makeWeightFunction(distribution = verteilung, a = a.value, b = b.value, c = c.value, d = d.value)
                     www <- w_function(interval_cov)
@@ -486,16 +516,39 @@ w_sliding.reflim <- function(x,covariate,verteilung = "gaussian", standard_devia
                     w_function <- makeWeightFunction(verteilung, sigma = standard_deviation)
                     www <- w_function(interval_cov, mean = median(interval_cov))
                 } else if (verteilung == "triangular") {
-                    a.value <- min(interval_cov)
-                    b.value <- median(interval_cov)
-                    c.value <- max(interval_cov)
+                  a <- if (is.null(a)) 0 else a
+                  b <- if (is.null(b)) 0.5 else b
+                  c <- if (is.null(c)) 1 else c
+                  
+                  a.value <- quantile(interval_cov, a)
+                  b.value <- quantile(interval_cov, b)
+                  c.value <- quantile(interval_cov, c)
+                  
+                  # print(paste("a.value =", a.value))
+                  # print(paste("b.value =", b.value))
+                  # print(paste("c.value =", c.value))
+                  # print("---")
+                  
+                    # a.value <- min(interval_cov)
+                    # b.value <- median(interval_cov)
+                    # c.value <- max(interval_cov)
                     w_function <- makeWeightFunction(verteilung, a = a.value, b = b.value, c = c.value)
                     www <- w_function(interval_cov)
                 } else if (verteilung == "trapezoidal") {
-                    a.value <- min(interval_cov)
-                    b.value <- quantile(interval_cov, 0.25)
-                    c.value <- quantile(interval_cov, 0.75)
-                    d.value <- max(interval_cov)
+                  a <- if (is.null(a)) 0 else a
+                  b <- if (is.null(b)) 0.25 else b
+                  c <- if (is.null(c)) 0.75 else c
+                  d <- if (is.null(d)) 1 else d
+                  
+                  a.value <- quantile(interval_cov, a)
+                  b.value <- quantile(interval_cov, b)
+                  c.value <- quantile(interval_cov, c)
+                  d.value <- quantile(interval_cov, d)
+                  
+                    # a.value <- min(interval_cov)
+                    # b.value <- quantile(interval_cov, 0.25)
+                    # c.value <- quantile(interval_cov, 0.75)
+                    # d.value <- max(interval_cov)
                     
                     w_function <- makeWeightFunction(distribution = verteilung, a = a.value, b = b.value, c = c.value, d = d.value)  # todo
                     www <- w_function(interval_cov)
