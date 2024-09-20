@@ -1,4 +1,4 @@
-setwd("C:\\Users\\12591\\Desktop")
+setwd("D:\\projekt\\Rstudio\\Praxis")
 source("main.R")
 # source("D:/AppData/OneDrive - lelelelele/Studium/Bachelor/WiSe24-25/Praxisprojekt/code/main.R")
 if (require("shiny")) {
@@ -30,12 +30,6 @@ if (require("dplyr")) {
 
 
 
-
-
-
-
-
-
 x <- reflimR::livertests$ALB
 t <- reflimR::livertests$Age
 
@@ -46,10 +40,10 @@ ui <- fluidPage(
         sidebarPanel(
             selectInput("verteilung",
                         "Choose Distribution:",
-                        choices = c("Gaussian" = "gaussian",
+                        choices = c("Truncated gaussian" = "truncated_gaussian",
                                     "Triangular" = "triangular",
                                     "Trapezoidal" = "trapezoidal"),
-                        selected = "gaussian"),
+                        selected = "truncated_gaussian"),
             fileInput("datafile", "Upload CSV File", accept = c("text/csv", "text/comma-separated-values,text/plain", ".csv")),
 
             selectInput("xcol", "Select X Column", choices = NULL),
@@ -71,9 +65,9 @@ ui <- fluidPage(
             numericInput("step_width",
                          "Step Width:",
                          value = NULL),
-            # for gaussian
+            # for truncated_gaussian
             conditionalPanel(
-              condition = "input.verteilung == 'gaussian'",
+              condition = "input.verteilung == 'truncated_gaussian'",
               numericInput("standardabweichung",
                            "Standardabweichung:",
                            value = 5)
@@ -190,7 +184,7 @@ server <- function(input, output, session) {
         
 
         result <- tryCatch({
-          if (input$verteilung == "gaussian") {
+          if (input$verteilung == "truncated_gaussian") {
             res <- w_sliding.reflim.plot(user_x, user_t, verteilung = input$verteilung,
                                          standard_deviation = standardabweichung,
                                          window.size = window_size,
@@ -359,7 +353,7 @@ shinyApp(ui = ui, server = server)
 ##### function #####
 
 # 需要加权函数参数
-w_sliding.reflim.plot <- function(x,covariate,verteilung = "gaussian", standard_deviation = 5, a = NULL, b = NULL, c = NULL, d = NULL, window.size=NULL,step.width=NULL,lognormal=NULL,perc.trunc=2.5,n.min.window=200,n.min=100,apply.rounding=FALSE)
+w_sliding.reflim.plot <- function(x,covariate,verteilung = "truncated_gaussian", standard_deviation = 5, a = NULL, b = NULL, c = NULL, d = NULL, window.size=NULL,step.width=NULL,lognormal=NULL,perc.trunc=2.5,n.min.window=200,n.min=100,apply.rounding=FALSE)
 {
     # print(paste("sd = ", standard_deviation))
     
@@ -429,7 +423,7 @@ w_sliding.reflim.plot <- function(x,covariate,verteilung = "gaussian", standard_
                 x.interval[[i]] <- xxx 
 
                 
-                if (verteilung == "gaussian") {
+                if (verteilung == "truncated_gaussian") {
                     w_function <- makeWeightFunction(verteilung, sigma = standard_deviation)
                     www <- w_function(interval_cov, mean = median(interval_cov))
                 } else if (verteilung == "triangular") {
@@ -534,8 +528,8 @@ w_sliding.reflim.plot <- function(x,covariate,verteilung = "gaussian", standard_
                 xxx <- xx[is.in.interval]
                 x.interval[[ind]] <- xxx
                 
-                if (verteilung == "gaussian") {
-                    w_function <- makeWeightFunction(verteilung, sigma = standard_deviation)
+                if (verteilung == "truncated_gaussian") {
+                    w_function <- makeWeightFunction(distribution = verteilung, sigma = standard_deviation)
                     www <- w_function(interval_cov, mean = as.numeric(median(interval_cov)))
                 } else if (verteilung == "triangular") {
                   a <- if (is.null(a)) 0 else a

@@ -64,10 +64,10 @@ main <- function() {
 #' @param t [integer]
 #' 
 #' @example 
-#' run(x, t, verteilung = "gaussian")
+#' run(x, t, verteilung = "truncated_gaussian")
 
-run <- function(x, t, verteilung = "gaussian", standardabweichung = 5, a = NULL, b = NULL, c = NULL, d = NULL, window.size=NULL,step.width=NULL,lognormal=NULL,perc.trunc=2.5,n.min.window=200,n.min=100,apply.rounding=FALSE) {
-    if (verteilung == "gaussian") {
+run <- function(x, t, verteilung = "truncated_gaussian", standardabweichung = 5, a = NULL, b = NULL, c = NULL, d = NULL, window.size=NULL,step.width=NULL,lognormal=NULL,perc.trunc=2.5,n.min.window=200,n.min=100,apply.rounding=FALSE) {
+    if (verteilung == "truncated_gaussian") {
         if (standardabweichung == 5) {
             res <- w_sliding.reflim(x, t,verteilung = verteilung, window.size = window.size, step.width = step.width, lognormal = lognormal)  # 需要分布函数参数
             alist(result.sliding.reflim = res)
@@ -284,8 +284,9 @@ dtrapezoid <- function(x, a, b, c, d) {
     return(y)
 }
 
-makeWeightFunction <- function(distribution = "gaussian", ...) {
-    if (distribution == "gaussian") {
+makeWeightFunction <- function(distribution = "truncated_gaussian", ...) {
+  # print(distribution)
+    if (distribution == "truncated_gaussian") {
         sigma <- list(...)$sigma
         if (is.null(sigma)) {
             sigma <- 5
@@ -321,7 +322,7 @@ makeWeightFunction <- function(distribution = "gaussian", ...) {
 
 
 # 需要添加分布函数参数 已完成
-w_sliding.reflim <- function(x,covariate,verteilung = "gaussian", standard_deviation = 5, a = NULL, b = NULL, c = NULL, d = NULL, window.size=NULL,step.width=NULL,lognormal=NULL,perc.trunc=2.5,n.min.window=200,n.min=100,apply.rounding=FALSE)
+w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", standard_deviation = 5, a = NULL, b = NULL, c = NULL, d = NULL, window.size=NULL,step.width=NULL,lognormal=NULL,perc.trunc=2.5,n.min.window=200,n.min=100,apply.rounding=FALSE)
 {
     # print("x")
     # print(x)
@@ -397,7 +398,7 @@ w_sliding.reflim <- function(x,covariate,verteilung = "gaussian", standard_devia
                 # www <- gaussian(interval_cov, mean = median(interval_cov))
 
                 
-                if (verteilung == "gaussian") {
+                if (verteilung == "truncated_gaussian") {
                     w_function <- makeWeightFunction(verteilung, sigma = standard_deviation)
                     www <- w_function(interval_cov, mean = median(interval_cov))
                 } else if (verteilung == "triangular") {
@@ -524,7 +525,7 @@ w_sliding.reflim <- function(x,covariate,verteilung = "gaussian", standard_devia
                 # www <- gaussian(interval_cov, mean = median(interval_cov))
 
                 
-                if (verteilung == "gaussian") {
+                if (verteilung == "truncated_gaussian") {
                     w_function <- makeWeightFunction(verteilung, sigma = standard_deviation)
                     www <- w_function(interval_cov, mean = median(interval_cov))
                 } else if (verteilung == "triangular") {
