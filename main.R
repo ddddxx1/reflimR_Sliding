@@ -53,7 +53,19 @@ main <- function() {
   
 }
 
-# 需要分布函数参数  完成
+
+#' run
+#' 
+#' @description 
+#' Window slider main function
+#' complete the entire process of the program
+#' 
+#' @param x [numeric]
+#' @param t [integer]
+#' 
+#' @example 
+#' run(x, t, verteilung = "gaussian")
+
 run <- function(x, t, verteilung = "gaussian", standardabweichung = 5, a = NULL, b = NULL, c = NULL, d = NULL, window.size=NULL,step.width=NULL,lognormal=NULL,perc.trunc=2.5,n.min.window=200,n.min=100,apply.rounding=FALSE) {
     if (verteilung == "gaussian") {
         if (standardabweichung == 5) {
