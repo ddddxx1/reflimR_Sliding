@@ -18,6 +18,7 @@ main <- function() {
   
   x <- reflimR::livertests$ALB
   t <- reflimR::livertests$Age
+  w <- dnorm(t, mean = median(t), sd = sd(t)/2)
   run(x, t)
   
   csvdata <- data.frame(x = x, covariate = t)
@@ -65,11 +66,13 @@ main <- function() {
 #' 
 #' @example 
 #' run(x, t, verteilung = "truncated_gaussian")
+#' 
+#' @export
 
 run <- function(x, t, verteilung = "truncated_gaussian", standardabweichung = 5, a = NULL, b = NULL, c = NULL, d = NULL, window.size=NULL,step.width=NULL,lognormal=NULL,perc.trunc=2.5,n.min.window=200,n.min=100,apply.rounding=FALSE) {
     if (verteilung == "truncated_gaussian") {
         if (standardabweichung == 5) {
-            res <- w_sliding.reflim(x, t,verteilung = verteilung, window.size = window.size, step.width = step.width, lognormal = lognormal)  # 需要分布函数参数
+            res <- w_sliding.reflim(x, t,verteilung = verteilung, window.size = window.size, step.width = step.width, lognormal = lognormal)
             alist(result.sliding.reflim = res)
         } else {
             res <- w_sliding.reflim(x, t, verteilung = verteilung, window.size = window.size, step.width = step.width, lognormal = lognormal)
@@ -77,6 +80,13 @@ run <- function(x, t, verteilung = "truncated_gaussian", standardabweichung = 5,
             # alist(res)
             alist1(res, res1)
         }
+    } else if (verteilung == "gaussian") {  # todo
+        if (standardabweichung == 5) {
+            res <- w_sliding.reflim(x, t, verteilung = verteilung, window.size = NULL, step.width = NULL)
+        } else {
+        
+        }
+      
     } else {
         res <- w_sliding.reflim(x, t, verteilung = verteilung, a = a, b = b, c = c, d = d, window.size = window.size, step.width = step.width, lognormal = lognormal)
         alist(result.sliding.reflim = res)
@@ -85,7 +95,18 @@ run <- function(x, t, verteilung = "truncated_gaussian", standardabweichung = 5,
 
 
 
-
+#' alist
+#' 
+#' @description 
+#' Plot Sliding Reference Limits with Confidence Intervals
+#' 
+#' @param result.sliding.reflim 
+#' A data frame or list containing the sliding reference limits and their associated confidence intervals
+#' 
+#' @example 
+#' alist(result.sliding.reflim = res)
+#' 
+#' @export
 
 alist <- function(result.sliding.reflim,use.mean=T,xlim=NULL,ylim=NULL,xlab=NULL,ylab=NULL,col.low=c(0,0,1),col.upp=c(1,0,0),lwd=2,transparency=0.8,draw.cis=T,grid.col=NULL,log="",cut.at=1){
     
@@ -154,7 +175,22 @@ alist <- function(result.sliding.reflim,use.mean=T,xlim=NULL,ylim=NULL,xlab=NULL
 
 
 
-
+#' alist1
+#' 
+#' @description 
+#' Plot 2 Sliding Reference Limits with Confidence Intervals
+#' (when default parameters are not used)
+#' 
+#' @param result.sliding.reflim1 
+#' A data frame or list containing the sliding reference limits and their associated confidence intervals
+#' 
+#' @param result.sliding.reflim2
+#' Another data frame or list containing the sliding reference limits and their associated confidence intervals
+#'  
+#' @example 
+#' alist1(res, res1)
+#' 
+#' @export
 
 alist1 <- function(result.sliding.reflim1, result.sliding.reflim2, use.mean=T, xlim=NULL, ylim=NULL, 
                   xlab=NULL, ylab=NULL, col.low1=c(0,0,1), col.upp1=c(1,0,0), col.low2=c(0,1,0), 
@@ -240,16 +276,19 @@ alist1 <- function(result.sliding.reflim1, result.sliding.reflim2, use.mean=T, x
 
 
 
-# makeGaussian <- function(sigma) {
-#     return(function(x, mean) {
-#         dnorm(x, mean = mean, sd = sigma)
-#     })
-# }
+#' dtriang
+#' 
+#' @description 
+#' Triangular Probability Density Function
+#' 
+#' @param a [int] left endpoint of a triangle
+#' @param b [int] Vertex of a triangle
+#' @param c [int] Right endpoint of the triangle
+#' 
+#' @return [int] Probability density at point x
+#' 
+#' @export
 
-
-# a: 三角形左端点
-# b: 三角形最高点
-# c: 三角形右端点
 dtriang <- function(x, a, b, c) {
     # if (x < a || x > c) return(0)
     # if (x <= b) {
@@ -264,10 +303,21 @@ dtriang <- function(x, a, b, c) {
 }
 
 
-# a: 左端点
-# b: 左水平点
-# c: 右水平点
-# d: 右端点
+
+#' dtrapezoid
+#' 
+#' @description 
+#' Trapezoidal Probability Density Function
+#' 
+#' @param a [int] left endpoint of a trapezoid
+#' @param b [int] Trapezoid left horizontal point
+#' @param c [int] Trapezoid right horizontal point
+#' @param d [int] Trapezoid right endpoint
+#' 
+#' @return [int] Probability density
+#' 
+#' @export
+
 dtrapezoid <- function(x, a, b, c, d) {
     # if (x < a || x > d) return(0)
     # if (x <= b) {
@@ -284,6 +334,17 @@ dtrapezoid <- function(x, a, b, c, d) {
     return(y)
 }
 
+#' makeWeightFunction
+#' 
+#' @description 
+#' Generate a weighting function based on the specified distribution type
+#' 
+#' @param distribution [character] distribution type
+#' 
+#' @return [function] weighting function
+#' 
+#' @export
+
 makeWeightFunction <- function(distribution = "truncated_gaussian", ...) {
   # print(distribution)
     if (distribution == "truncated_gaussian") {
@@ -294,6 +355,11 @@ makeWeightFunction <- function(distribution = "truncated_gaussian", ...) {
         return(function(x, mean) { # mean将区间内x的中位数传入，不需要用户自己更改
             dnorm(x, mean = mean, sd = sigma) / dnorm(mean, mean = mean, sd = sigma)
         })
+    } else if (distribution == "gaussian") {
+        sigma <- list(...)$sigma
+        if (is.null(sigma)) {
+            sigma <- 5
+        }
     } else if (distribution == "triangular") {
         a <- list(...)$a
         b <- list(...)$b
@@ -319,9 +385,20 @@ makeWeightFunction <- function(distribution = "truncated_gaussian", ...) {
 
 
 
+#' w_sliding.reflim
+#' 
+#' @description 
+#' Estimate reference limits using sliding windows with weighting functions
+#' 
+#' This function estimates reference limits using a sliding window approach, applying different types of weighting functions 
+#' (truncated Gaussian, triangular, trapezoidal) to the covariate data. It is designed to handle missing values, 
+#' perform ordered computations, and calculate weighted reference limits for each windowed interval.
+#' 
+#' @return lower.lim 参考区间下限
+#'          upper.lim 参考区间上限
+#' 
+#' @export
 
-
-# 需要添加分布函数参数 已完成
 w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", standard_deviation = 5, a = NULL, b = NULL, c = NULL, d = NULL, window.size=NULL,step.width=NULL,lognormal=NULL,perc.trunc=2.5,n.min.window=200,n.min=100,apply.rounding=FALSE)
 {
     # print("x")
@@ -529,13 +606,13 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
                     w_function <- makeWeightFunction(verteilung, sigma = standard_deviation)
                     www <- w_function(interval_cov, mean = median(interval_cov))
                 } else if (verteilung == "triangular") {
-                  a <- if (is.null(a)) 0 else a
-                  b <- if (is.null(b)) 0.5 else b
-                  c <- if (is.null(c)) 1 else c
+                    a <- if (is.null(a)) 0 else a
+                    b <- if (is.null(b)) 0.5 else b
+                    c <- if (is.null(c)) 1 else c
                   
-                  a.value <- quantile(interval_cov, a)
-                  b.value <- quantile(interval_cov, b)
-                  c.value <- quantile(interval_cov, c)
+                    a.value <- quantile(interval_cov, a)
+                    b.value <- quantile(interval_cov, b)
+                    c.value <- quantile(interval_cov, c)
                   
                   # print(paste("a.value =", a.value))
                   # print(paste("b.value =", b.value))
@@ -654,6 +731,10 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
 }
 
 
+#' w_reflim
+#' 
+#' @description 
+#' 使用qq图方法，计算上下限
 
 # targets提供目标上下限
 w_reflim <- function (x, x_weight, lognormal = NULL, targets = NULL, perc.trunc = 2.5,
@@ -857,7 +938,12 @@ w_reflim <- function (x, x_weight, lognormal = NULL, targets = NULL, perc.trunc 
 
 
 
-
+#' w_bowley
+#' 
+#' @description 
+#' 计算偏度度量，判断对称性
+#' 
+#' @export
 
 w_bowley <- function(x, x_weight) {
   # Hmisc für wtd.quantile
@@ -879,6 +965,12 @@ w_IQR <- function(x, x_weight) {
   return(iqr)
 }
 
+#' w_lognorm
+#' 
+#' @description 
+#' 计算是否应该使用lognorm或者norm
+#' 
+#' @export
 
 w_lognorm <- function(x, x_weight, cutoff = 0.05, digits = 3, plot.it = FALSE, xlab = "x",
                       plot.logtype = TRUE, main = "W_Bowley skewness") {
@@ -966,7 +1058,12 @@ w_lognorm <- function(x, x_weight, cutoff = 0.05, digits = 3, plot.it = FALSE, x
 
 
 
-
+#' w_iboxplot
+#' 
+#' @description 
+#' 箱线图法进行迭代截断，以获取中心95%的可能不显著结果
+#' 
+#' @export
 
 w_iboxplot <- function(x, x_weight, lognormal = NULL, perc.trunc = 2.5,
                        apply.rounding = TRUE, plot.it = TRUE, main = "w_iBoxplot", xlab = "x") {
@@ -1101,13 +1198,12 @@ w_iboxplot <- function(x, x_weight, lognormal = NULL, perc.trunc = 2.5,
 
 
 
-# ggplot(df, aes(x = x, weight = ww)) +
-#   stat_density(geom = "line", aes(color = "blue"), adjust = 1, bw = "nrd0") +
-#   labs(title = "Weighted Kernel Density Estimate", x = "x", y = "Density") +
-#   theme_minimal()
-
-
-
+#' w_truncated_qqplot
+#' 
+#' @description 
+#' qq图用于验证正态性，以及比较任意两种分布
+#' 
+#' @export
 
 w_truncated_qqplot <- function(x, x_weight, lognormal = NULL, perc.trunc = 2.5, n.min = 200,
                                apply.rounding = TRUE, plot.it = TRUE, main = "w_Q-Q plot",
@@ -1120,6 +1216,14 @@ w_truncated_qqplot <- function(x, x_weight, lognormal = NULL, perc.trunc = 2.5, 
     install.packages("Hmisc")
     library(Hmisc)
   }
+
+    # reflimR für adjust_digits
+    if (require("reflimR")) {
+        library(reflimR)
+    } else {
+        install.packages("reflimR")
+        library(reflimR)
+    }
   
   na_indices <- is.na(x)
   x_clean <- x[!na_indices]
@@ -1211,108 +1315,3 @@ w_truncated_qqplot <- function(x, x_weight, lognormal = NULL, perc.trunc = 2.5, 
   
   return(list(result = result, lognormal = lognormal))
 }
-
-
-
-
-##### Shiny #####
-
-if (require("shiny")) {
-    library(shiny)
-} else {
-    install.packages("shiny")
-    library(shiny)
-}
-if (require("ggplot2")) {
-    library(ggplot2)
-} else {
-    install.packages("ggplot2")
-    library(ggplot2)
-}
-if (require("plotly")) {
-    library(plotly)
-} else {
-    install.packages("plotly")
-    library(plotly)
-}
-if (require("dplyr")) {
-    library(dplyr)
-} else {
-    install.packages("dplyr")
-    library(dplyr)
-}
-
-# ui <- fluidPage(
-#     titlePanel("滑动窗口加权参考区间可视化工具"),
-# 
-#     sidebarLayout(
-#         sidebarPanel(
-#             fileInput("datafile", "上传数据文件（csv格式）", accept = ".csv"),
-#             selectInput("verteilung", "选择分布类型：", choices = c("gaussian", "triangular", "trapezoidal")),
-#             numericInput("standard_deviation", "标准差（仅对高斯分布）：", value = 5, min = 0.1, step = 0.1),
-#             numericInput("window_size", "窗口大小：", value = 10, min = 1),
-#             numericInput("step_width", "步长：", value = 5, min = 1),
-#             numericInput("n_min_window", "窗口内最小点数：", value = 200, min = 10),
-#             actionButton("run_analysis", "运行分析")
-#         ),
-# 
-#         mainPanel(
-#             tabsetPanel(
-#                 tabPanel("加权结果", plotlyOutput("weight_plot")),
-#                 tabPanel("数据表格", dataTableOutput("result_table"))
-#             )
-#         )
-#     )
-# )
-# 
-# server <- function(input, output, session) {
-#     # 存储计算结果
-#     result_data <- eventReactive(input$run_analysis, {
-#         req(input$datafile)
-#         data <- read.csv(input$datafile$datapath)
-# 
-#         # 假设数据中包含 x 和 covariate 列
-#         if (!all(c('x', 'covariate') %in% colnames(data))) {
-#             showNotification("数据文件必须包含 x 和 covariate 列!", type = "error")
-#             return(NULL)
-#         }
-# 
-#         tryCatch({
-#             res <- w_sliding.reflim(
-#                 x = data$x,
-#                 covariate = data$covariate,
-#                 verteilung = input$verteilung,
-#                 standard_deviation = input$standard_deviation,
-#                 window.size = input$window_size,
-#                 step.width = input$step_width,
-#                 n.min.window = input$n_min_window
-#             )
-#             res
-#         }, error = function(e) {
-#             showNotification(paste("错误： ", e$message), type = "error")
-#             return(NULL)
-#         })
-#     })
-# 
-#     # 绘制权重图
-#     output$weight_plot <- renderPlotly({
-#         req(result_data())
-#         res <- result_data()
-# 
-#         p <- ggplot(res, aes(x = covariate, y = weight, colour = factor(window_left))) +
-#             geom_line() +
-#             labs(title = "权重随协变量的变化", x = "协变量", y = "权重", color = "窗口起点") +
-#             theme_minimal()
-# 
-#         ggplotly(p)
-#     })
-# 
-#     # 显示结果数据表
-#     output$result_table <- renderDataTable({
-#         req(result_data())
-#         res <- result_data()
-#         datatable(res)
-#     })
-# }
-# 
-# shinyApp(ui = ui, server = server)
