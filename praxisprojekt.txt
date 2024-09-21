@@ -1,0 +1,39 @@
+ 
+
+11.09已完成：
+2. 增加了加权函数的灵活性，可以使用三种不同的分布函数
+1. 确保尺度无关skalenunabhängig，加权函数的在分布的中心点标准化normalisieren为1
+3. 创建了shiny应用程序
+
+
+Aufgaben：
+1. 修复错误，xct hochladen, a = 198  n.steps=339
+
+函数参数：
+	对于函数参数
+		gaussian中接受x为在当前window中的点，mean自动作为当前点的平均值
+		triangular中
+			a是窗口最左侧
+			b是所有点的中位数
+			c是窗口最右侧
+		trapezoidal
+			a是窗口最左侧
+			b是所有点的0.25分位
+			c是所有点的0.75分位
+			d是所有点的最右侧
+用户决定要多大的数据
+周三 周五
+
+
+
+
+
+
+函数运行流程：
+run
+	w_sliding.reflim
+		w_reflim
+			w_lognorm
+			w_iboxplot
+			w_truncated_qqplot
+			conf_int95
