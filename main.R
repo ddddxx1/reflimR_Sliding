@@ -83,8 +83,12 @@ run <- function(x, t, verteilung = "truncated_gaussian", standardabweichung = 5,
     } else if (verteilung == "gaussian") {  # todo
         if (standardabweichung == 5) {
             res <- w_sliding.reflim(x, t, verteilung = verteilung, window.size = NULL, step.width = NULL)
+            alist(result.sliding.reflim = res)
+            print("alist finish")
         } else {
-        
+            res <- w_sliding.reflim(x, t, verteilung = verteilung, window.size = NULL, step.width = NULL, lognormal = lognormal)
+            res1 <- w_sliding.reflim(x, t, verteilung = verteilung, standard_deviation = standardabweichung, window.size = NULL, step.width = NULL, lognormal = lognormal)
+            alist1(res, res1)
         }
       
     } else {
@@ -355,11 +359,14 @@ makeWeightFunction <- function(distribution = "truncated_gaussian", ...) {
         return(function(x, mean) { # mean将区间内x的中位数传入，不需要用户自己更改
             dnorm(x, mean = mean, sd = sigma) / dnorm(mean, mean = mean, sd = sigma)
         })
-    } else if (distribution == "gaussian") {
+    } else if (distribution == "gaussian") {    # todo
         sigma <- list(...)$sigma
         if (is.null(sigma)) {
             sigma <- 5
         }
+        return(function(x, mean) {
+            dnorm(x, mean = mean, sd = sigma) / dnorm(mean, mean = mean, sd = sigma)
+        })
     } else if (distribution == "triangular") {
         a <- list(...)$a
         b <- list(...)$b
@@ -454,275 +461,267 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
     # print("xx")
     # print(xx)
     
-    if (!is.null(window.size) & !is.null(step.width)) {
-        print("!is.null(window.size) & !is.null(step.width)")
-        window.left <- covcomp[1]
-        window.right <- window.left + window.size
-        for (i in 1:n.steps) {
-            # print(window.left)
-            # print(window.right)
-            # print(covcomp)
-            is.in.interval <- covcomp >= window.left & covcomp <= window.right
-            if (sum(is.in.interval) >= n.min) {
-                 
-                interval_cov <- covcomp[is.in.interval]
-                
-                xxx <- xx[is.in.interval]
-                # www <- ww[is.in.interval]
-                # www <- dnorm(interval_cov, mean = median(interval_cov), sd = standard_deviation)
-                
-                # gaussian <- makeGaussian(standard_deviation)
-                # www <- gaussian(interval_cov, mean = median(interval_cov))
-
-                
-                if (verteilung == "truncated_gaussian") {
-                    w_function <- makeWeightFunction(verteilung, sigma = standard_deviation)
-                    www <- w_function(interval_cov, mean = median(interval_cov))
-                } else if (verteilung == "triangular") {
-                  a <- if (is.null(a)) 0 else a
-                  b <- if (is.null(b)) 0.5 else b
-                  c <- if (is.null(c)) 1 else c
-                  
-                  a.value <- quantile(interval_cov, a)
-                  b.value <- quantile(interval_cov, b)
-                  c.value <- quantile(interval_cov, c)
-                  
-                  # print(paste("a.value =", a.value))
-                  # print(paste("b.value =", b.value))
-                  # print(paste("c.value =", c.value))
-                  # print("---")
-                  
-                    # a.value <- min(interval_cov)
-                    # b.value <- median(interval_cov)
-                    # c.value <- max(interval_cov)
-                    w_function <- makeWeightFunction(verteilung, a = a.value, b = b.value, c = c.value)  # 这里需要分布函数参数
-                    www <- w_function(interval_cov)
-                } else if (verteilung == "trapezoidal") {
-                  a <- if (is.null(a)) 0 else a
-                  b <- if (is.null(b)) 0.25 else b
-                  c <- if (is.null(c)) 0.75 else c
-                  d <- if (is.null(d)) 1 else d
-                  
-                  a.value <- quantile(interval_cov, a)
-                  b.value <- quantile(interval_cov, b)
-                  c.value <- quantile(interval_cov, c)
-                  d.value <- quantile(interval_cov, d)
-                  
-                    # a.value <- min(interval_cov)
-                    # b.value <- quantile(interval_cov, 0.25) 
-                    # c.value <- quantile(interval_cov, 0.75)
-                    # d.value <- max(interval_cov)     
-                    
-                    w_function <- makeWeightFunction(distribution = verteilung, a = a.value, b = b.value, c = c.value, d = d.value)
-                    www <- w_function(interval_cov)
-                }
-                
-                plot(interval_cov, www, type = "l", col = "blue", lwd = 2, main = "www VS interval_cov")
-                points(interval_cov, www, col = "red")
-                www_sum <- sum(www)
-                text(x = mean(interval_cov), y = mean(www), 
-                     labels = paste("Sum of www =", round(www_sum, 2)),
-                     col = "darkgreen", cex = 1.5, font = 2)
-                sum.www[i] <- www_sum
-                
-                
-                
-                if (sum.www[i] > 100) {
-                    res.reflim <- w_reflim(xxx, www, n.min = n.min, apply.rounding = apply.rounding, lognormal = lognormal, plot.all = TRUE)
-
-                    
-                    lower.lim[i] <- res.reflim$limits[1]
-                    upper.lim[i] <- res.reflim$limits[2]
-                    ci.lower.lim.l[i] <- res.reflim$confidence.int[1]
-                    ci.lower.lim.u[i] <- res.reflim$confidence.int[2]
-                    ci.upper.lim.l[i] <- res.reflim$confidence.int[3]
-                    ci.upper.lim.u[i] <- res.reflim$confidence.int[4]
-                    
-                    
-                    if (names(res.reflim$stats)[1] == "mean") {
-                        distribution.type[i] <- "normal"
-                    } else {
-                        distribution.type[i] <- "lognormal"
-                    }
-                    
-                    covals <- covcomp[is.in.interval]
-                    covariate.left[i] <- window.left
-                    covariate.right[i] <- window.right
-                    covariate.mean[i] <- mean(covals)
-                    covariate.median[i] <- median(covals)
-                    covariate.n[i] <- sum(is.in.interval)
-                }
-                
-                # res.reflim <- w_reflim(xxx, www, n.min = n.min, apply.rounding = apply.rounding, lognormal = lognormal, plot.all = TRUE)
-                # 
-                # lower.lim[i] <- res.reflim$limits[1]
-                # upper.lim[i] <- res.reflim$limits[2]
-                # ci.lower.lim.l[i] <- res.reflim$confidence.int[1]
-                # ci.lower.lim.u[i] <- res.reflim$confidence.int[2]
-                # ci.upper.lim.l[i] <- res.reflim$confidence.int[3]
-                # ci.upper.lim.u[i] <- res.reflim$confidence.int[4]
-                # 
-                # if (names(res.reflim$stats)[1] == "mean") {
-                #     distribution.type[i] <- "normal"
-                # } else {
-                #     distribution.type[i] <- "lognormal"
-                # }
-                # 
-                # covals <- covcomp[is.in.interval]
-                # covariate.left[i] <- window.left
-                # covariate.right[i] <- window.right
-                # covariate.mean[i] <- mean(covals)
-                # covariate.median[i] <- median(covals)
-            } else {
-                covariate.left[i] <- window.left
-                covariate.right[i] <- window.right
-                covariate.n[i] <- sum(is.in.interval)
-            }
-            window.left <- window.left + step.width
-            window.right <- window.right + step.width
+    if (verteilung == "gaussian") { # todo
+        print("gaussian")
+        w_function <- makeWeightFunction("gaussian", sigma = standard_deviation)
+        for (i in seq(min(covcomp), max(covcomp), length.out = n.steps)) {
+            www <- w_function(covcomp, mean = i)
+            
+            res.reflim <- w_reflim(xx, www, n.min = n.min, apply.rounding = apply.rounding, lognormal = lognormal, plot.all = TRUE)
+            
+            lower.lim[i] <- res.reflim$limits[1]
+            upper.lim[i] <- res.reflim$limits[2]
+            ci.lower.lim.l[i] <- res.reflim$confidence.int[1]
+            ci.lower.lim.u[i] <- res.reflim$confidence.int[2]
+            ci.upper.lim.l[i] <- res.reflim$confidence.int[3]
+            ci.upper.lim.u[i] <- res.reflim$confidence.int[4]
+            sum.www[i] <- sum(www)
+            
+            distribution.type[i] <- ifelse(names(res.reflim)[1] == "mean", "normal", "lognormal")
+            
+            covariate.left[i] <- min(covcomp)  # 因为不需要区间，所以用最小值
+            covariate.right[i] <- max(covcomp)  # 同样，用最大值
+            covariate.mean[i] <- mean(covcomp)
+            covariate.median[i] <- median(covcomp)
+            covariate.n[i] <- length(covcomp)  # 统计所有协变量的数量
         }
     } else {
-      print("ELSE")
-        ind <- 1
-        indl <- 1
-        indr <- 2
-        while(indr <= length(cov.unique)) {
-            is.in.interval <- covcomp >= cov.unique[indl] & covcomp < cov.unique[indr]
-            
-            if (sum(is.in.interval) >= n.min.window) {
-                
-                # print(covcomp[is.in.interval])
-                interval_cov <- covcomp[is.in.interval]
-                
-                xxx <- xx[is.in.interval]
-                # www <- ww[is.in.interval]
-                # www <- dnorm(interval_cov, mean = median(interval_cov), sd = standard_deviation)
-                
-                # gaussian <- makeGaussian(standard_deviation)
-                # www <- gaussian(interval_cov, mean = median(interval_cov))
-
-                
-                if (verteilung == "truncated_gaussian") {
-                    w_function <- makeWeightFunction(verteilung, sigma = standard_deviation)
-                    www <- w_function(interval_cov, mean = median(interval_cov))
-                } else if (verteilung == "triangular") {
-                    a <- if (is.null(a)) 0 else a
-                    b <- if (is.null(b)) 0.5 else b
-                    c <- if (is.null(c)) 1 else c
-                  
-                    a.value <- quantile(interval_cov, a)
-                    b.value <- quantile(interval_cov, b)
-                    c.value <- quantile(interval_cov, c)
-                  
-                  # print(paste("a.value =", a.value))
-                  # print(paste("b.value =", b.value))
-                  # print(paste("c.value =", c.value))
-                  # print("---")
-                  
-                    # a.value <- min(interval_cov)
-                    # b.value <- median(interval_cov)
-                    # c.value <- max(interval_cov)
-                    w_function <- makeWeightFunction(verteilung, a = a.value, b = b.value, c = c.value)
-                    www <- w_function(interval_cov)
-                } else if (verteilung == "trapezoidal") {
-                  a <- if (is.null(a)) 0 else a
-                  b <- if (is.null(b)) 0.25 else b
-                  c <- if (is.null(c)) 0.75 else c
-                  d <- if (is.null(d)) 1 else d
-                  
-                  a.value <- quantile(interval_cov, a)
-                  b.value <- quantile(interval_cov, b)
-                  c.value <- quantile(interval_cov, c)
-                  d.value <- quantile(interval_cov, d)
-                  
-                    # a.value <- min(interval_cov)
-                    # b.value <- quantile(interval_cov, 0.25)
-                    # c.value <- quantile(interval_cov, 0.75)
-                    # d.value <- max(interval_cov)
+        if (!is.null(window.size) & !is.null(step.width)) {
+            print("!is.null(window.size) & !is.null(step.width)")
+            window.left <- covcomp[1]
+            window.right <- window.left + window.size
+            for (i in 1:n.steps) {
+                # print(window.left)
+                # print(window.right)
+                # print(covcomp)
+                is.in.interval <- covcomp >= window.left & covcomp <= window.right
+                if (sum(is.in.interval) >= n.min) {
                     
-                    w_function <- makeWeightFunction(distribution = verteilung, a = a.value, b = b.value, c = c.value, d = d.value)  # todo
-                    www <- w_function(interval_cov)
-                }
-                
-                # www <- w_function(interval_cov, mean = median(interval_cov))
-                
-                
-                plot(interval_cov, www, type = "l", col = "blue", lwd = 2, main = "www VS interval_cov")
-                points(interval_cov, www, col = "red")
-                www_sum <- sum(www)
-                text(x = mean(interval_cov), y = mean(www), 
-                     labels = paste("Sum of www =", round(www_sum, 2)),
-                     col = "darkgreen", cex = 1.5, font = 2)
-                sum.www[ind] <- www_sum
-                
-                # while(sum.www[ind] < 7) {
-                #     indr <- indr + 1
-                # }
-                
-                if (sum.www[ind] > 100) {
-                    res.reflim <- w_reflim(xxx, www, n.min = n.min, apply.rounding = apply.rounding, lognormal = lognormal, plot.all = TRUE)
-                    # print(res.reflim)
+                    interval_cov <- covcomp[is.in.interval]
                     
-                    lower.lim[ind] <- res.reflim$limits[1]
-                    upper.lim[ind] <- res.reflim$limits[2]
-                    ci.lower.lim.l[ind] <- res.reflim$confidence.int[1]
-                    ci.lower.lim.u[ind] <- res.reflim$confidence.int[2]
-                    ci.upper.lim.l[ind] <- res.reflim$confidence.int[3]
-                    ci.upper.lim.u[ind] <- res.reflim$confidence.int[4]
+                    xxx <- xx[is.in.interval]
+                    # www <- ww[is.in.interval]
+                    # www <- dnorm(interval_cov, mean = median(interval_cov), sd = standard_deviation)
                     
-                    if (names(res.reflim$stats)[1] == "mean") {
-                        distribution.type[ind] <- "normal"
-                    } else {
-                        distribution.type[ind] <- "lognormal"
+                    # gaussian <- makeGaussian(standard_deviation)
+                    # www <- gaussian(interval_cov, mean = median(interval_cov))
+                    
+                    
+                    if (verteilung == "truncated_gaussian") {
+                        w_function <- makeWeightFunction(verteilung, sigma = standard_deviation)
+                        www <- w_function(interval_cov, mean = median(interval_cov))
+                    } else if (verteilung == "triangular") {
+                        a <- if (is.null(a)) 0 else a
+                        b <- if (is.null(b)) 0.5 else b
+                        c <- if (is.null(c)) 1 else c
+                        
+                        a.value <- quantile(interval_cov, a)
+                        b.value <- quantile(interval_cov, b)
+                        c.value <- quantile(interval_cov, c)
+                        
+                        # print(paste("a.value =", a.value))
+                        # print(paste("b.value =", b.value))
+                        # print(paste("c.value =", c.value))
+                        # print("---")
+                        
+                        # a.value <- min(interval_cov)
+                        # b.value <- median(interval_cov)
+                        # c.value <- max(interval_cov)
+                        w_function <- makeWeightFunction(verteilung, a = a.value, b = b.value, c = c.value)  # 这里需要分布函数参数
+                        www <- w_function(interval_cov)
+                    } else if (verteilung == "trapezoidal") {
+                        a <- if (is.null(a)) 0 else a
+                        b <- if (is.null(b)) 0.25 else b
+                        c <- if (is.null(c)) 0.75 else c
+                        d <- if (is.null(d)) 1 else d
+                        
+                        a.value <- quantile(interval_cov, a)
+                        b.value <- quantile(interval_cov, b)
+                        c.value <- quantile(interval_cov, c)
+                        d.value <- quantile(interval_cov, d)
+                        
+                        # a.value <- min(interval_cov)
+                        # b.value <- quantile(interval_cov, 0.25) 
+                        # c.value <- quantile(interval_cov, 0.75)
+                        # d.value <- max(interval_cov)     
+                        
+                        w_function <- makeWeightFunction(distribution = verteilung, a = a.value, b = b.value, c = c.value, d = d.value)
+                        www <- w_function(interval_cov)
                     }
                     
-                    covals <- covcomp[is.in.interval]
-                    covariate.left[ind] <- min(covals)
-                    covariate.right[ind] <- max(covals)
-                    covariate.mean[ind] <- mean(covals)
-                    covariate.median[ind] <- median(covals)
-                    covariate.n[ind] <- sum(is.in.interval)
+                    plot(interval_cov, www, type = "l", col = "blue", lwd = 2, main = "www VS interval_cov")
+                    points(interval_cov, www, col = "red")
+                    www_sum <- sum(www)
+                    text(x = mean(interval_cov), y = mean(www), 
+                         labels = paste("Sum of www =", round(www_sum, 2)),
+                         col = "darkgreen", cex = 1.5, font = 2)
+                    sum.www[i] <- www_sum
                     
-                    indl <- indl + 1
-                    indr <- indr + 1
-                    ind <- ind + 1
+                    
+                    
+                    if (sum.www[i] > 100) {
+                        res.reflim <- w_reflim(xxx, www, n.min = n.min, apply.rounding = apply.rounding, lognormal = lognormal, plot.all = TRUE)
+                        
+                        
+                        lower.lim[i] <- res.reflim$limits[1]
+                        upper.lim[i] <- res.reflim$limits[2]
+                        ci.lower.lim.l[i] <- res.reflim$confidence.int[1]
+                        ci.lower.lim.u[i] <- res.reflim$confidence.int[2]
+                        ci.upper.lim.l[i] <- res.reflim$confidence.int[3]
+                        ci.upper.lim.u[i] <- res.reflim$confidence.int[4]
+                        
+                        
+                        if (names(res.reflim$stats)[1] == "mean") {
+                            distribution.type[i] <- "normal"
+                        } else {
+                            distribution.type[i] <- "lognormal"
+                        }
+                        
+                        covals <- covcomp[is.in.interval]
+                        covariate.left[i] <- window.left
+                        covariate.right[i] <- window.right
+                        covariate.mean[i] <- mean(covals)
+                        covariate.median[i] <- median(covals)
+                        covariate.n[i] <- sum(is.in.interval)
+                    }
+                    
+                } else {
+                    covariate.left[i] <- window.left
+                    covariate.right[i] <- window.right
+                    covariate.n[i] <- sum(is.in.interval)
+                }
+                window.left <- window.left + step.width
+                window.right <- window.right + step.width
+            }
+        } else {
+            print("ELSE")
+            ind <- 1
+            indl <- 1
+            indr <- 2
+            while(indr <= length(cov.unique)) {
+                is.in.interval <- covcomp >= cov.unique[indl] & covcomp < cov.unique[indr]
+                
+                if (sum(is.in.interval) >= n.min.window) {
+                    
+                    # print(covcomp[is.in.interval])
+                    interval_cov <- covcomp[is.in.interval]
+                    
+                    xxx <- xx[is.in.interval]
+                    # www <- ww[is.in.interval]
+                    # www <- dnorm(interval_cov, mean = median(interval_cov), sd = standard_deviation)
+                    
+                    # gaussian <- makeGaussian(standard_deviation)
+                    # www <- gaussian(interval_cov, mean = median(interval_cov))
+                    
+                    
+                    if (verteilung == "truncated_gaussian") {
+                        w_function <- makeWeightFunction(verteilung, sigma = standard_deviation)
+                        www <- w_function(interval_cov, mean = median(interval_cov))
+                    } else if (verteilung == "triangular") {
+                        a <- if (is.null(a)) 0 else a
+                        b <- if (is.null(b)) 0.5 else b
+                        c <- if (is.null(c)) 1 else c
+                        
+                        a.value <- quantile(interval_cov, a)
+                        b.value <- quantile(interval_cov, b)
+                        c.value <- quantile(interval_cov, c)
+                        
+                        # print(paste("a.value =", a.value))
+                        # print(paste("b.value =", b.value))
+                        # print(paste("c.value =", c.value))
+                        # print("---")
+                        
+                        # a.value <- min(interval_cov)
+                        # b.value <- median(interval_cov)
+                        # c.value <- max(interval_cov)
+                        w_function <- makeWeightFunction(verteilung, a = a.value, b = b.value, c = c.value)
+                        www <- w_function(interval_cov)
+                    } else if (verteilung == "trapezoidal") {
+                        a <- if (is.null(a)) 0 else a
+                        b <- if (is.null(b)) 0.25 else b
+                        c <- if (is.null(c)) 0.75 else c
+                        d <- if (is.null(d)) 1 else d
+                        
+                        a.value <- quantile(interval_cov, a)
+                        b.value <- quantile(interval_cov, b)
+                        c.value <- quantile(interval_cov, c)
+                        d.value <- quantile(interval_cov, d)
+                        
+                        # a.value <- min(interval_cov)
+                        # b.value <- quantile(interval_cov, 0.25)
+                        # c.value <- quantile(interval_cov, 0.75)
+                        # d.value <- max(interval_cov)
+                        
+                        w_function <- makeWeightFunction(distribution = verteilung, a = a.value, b = b.value, c = c.value, d = d.value)  # todo
+                        www <- w_function(interval_cov)
+                    }
+                    
+                    # www <- w_function(interval_cov, mean = median(interval_cov))
+                    
+                    
+                    plot(interval_cov, www, type = "l", col = "blue", lwd = 2, main = "www VS interval_cov")
+                    points(interval_cov, www, col = "red")
+                    www_sum <- sum(www)
+                    text(x = mean(interval_cov), y = mean(www), 
+                         labels = paste("Sum of www =", round(www_sum, 2)),
+                         col = "darkgreen", cex = 1.5, font = 2)
+                    sum.www[ind] <- www_sum
+                    
+                    # while(sum.www[ind] < 7) {
+                    #     indr <- indr + 1
+                    # }
+                    
+                    if (sum.www[ind] > 100) {
+                        res.reflim <- w_reflim(xxx, www, n.min = n.min, apply.rounding = apply.rounding, lognormal = lognormal, plot.all = TRUE)
+                        # print(res.reflim)
+                        
+                        lower.lim[ind] <- res.reflim$limits[1]
+                        upper.lim[ind] <- res.reflim$limits[2]
+                        ci.lower.lim.l[ind] <- res.reflim$confidence.int[1]
+                        ci.lower.lim.u[ind] <- res.reflim$confidence.int[2]
+                        ci.upper.lim.l[ind] <- res.reflim$confidence.int[3]
+                        ci.upper.lim.u[ind] <- res.reflim$confidence.int[4]
+                        
+                        if (names(res.reflim$stats)[1] == "mean") {
+                            distribution.type[ind] <- "normal"
+                        } else {
+                            distribution.type[ind] <- "lognormal"
+                        }
+                        
+                        covals <- covcomp[is.in.interval]
+                        covariate.left[ind] <- min(covals)
+                        covariate.right[ind] <- max(covals)
+                        covariate.mean[ind] <- mean(covals)
+                        covariate.median[ind] <- median(covals)
+                        covariate.n[ind] <- sum(is.in.interval)
+                        
+                        indl <- indl + 1
+                        indr <- indr + 1
+                        ind <- ind + 1
+                    } else {
+                        indr <- indr + 1
+                    }
+                    
                 } else {
                     indr <- indr + 1
                 }
-
-                
-                # res.reflim <- w_reflim(xxx, www, n.min = n.min, apply.rounding = apply.rounding, lognormal = lognormal)
-                # # print(res.reflim)
-                # 
-                # lower.lim[ind] <- res.reflim$limits[1]
-                # upper.lim[ind] <- res.reflim$limits[2]
-                # ci.lower.lim.l[ind] <- res.reflim$confidence.int[1]
-                # ci.lower.lim.u[ind] <- res.reflim$confidence.int[2]
-                # ci.upper.lim.l[ind] <- res.reflim$confidence.int[3]
-                # ci.upper.lim.u[ind] <- res.reflim$confidence.int[4]
-                # 
-                # if (names(res.reflim$stats)[1] == "mean") {
-                #     distribution.type[ind] <- "normal"
-                # } else {
-                #     distribution.type[ind] <- "lognormal"
-                # }
-                # 
-                # covals <- covcomp[is.in.interval]
-                # covariate.left[ind] <- min(covals)
-                # covariate.right[ind] <- max(covals)
-                # covariate.mean[ind] <- mean(covals)
-                # covariate.median[ind] <- median(covals)
-                # covariate.n[ind] <- sum(is.in.interval)
-                # 
-                # indl <- indl + 1
-                # indr <- indr + 1
-                # ind <- ind + 1
-            
-            } else {
-                indr <- indr + 1
             }
         }
     }
+    
+    # print(length(lower.lim))
+    # print(length(upper.lim))
+    # print(length(ci.lower.lim.l))
+    # print(length(ci.lower.lim.u))
+    # print(length(ci.upper.lim.l))
+    # print(length(ci.upper.lim.u))
+    # print(length(distribution.type))
+    # print(length(covariate.left))
+    # print(length(covariate.right))
+    # print(length(covariate.mean))
+    # print(length(covariate.median))
+    # print(length(covariate.n))
+    # print(length(sum.www))
     
     res <- data.frame(lower.lim,upper.lim,ci.lower.lim.l,ci.lower.lim.u,ci.upper.lim.l,ci.upper.lim.u,distribution.type,covariate.left,covariate.right,covariate.mean,covariate.median,covariate.n,sum.www)
     # 去除数据框中含有 NA 的行
