@@ -24,7 +24,7 @@ main <- function() {
   csvdata <- data.frame(x = x, covariate = t)
   write.csv(csvdata, "output-sliding.csv", row.names = FALSE)
   
-  w <- dnorm(t, mean = median(t), sd = sd(t)/2) # todo
+  w <- dnorm(t, mean = median(t), sd = sd(t)/2)
   
   res <- w_sliding.reflim(x, t)
   alist(result.sliding.reflim = res)
@@ -41,7 +41,7 @@ main <- function() {
   }
   
   
-  # dnorm todo
+  # dnorm 
   # w_bowley(x, ww)
   lognormal <- w_lognorm(x, w)$lognormal
   res.ibox <- w_iboxplot(x, w, lognormal)
@@ -63,6 +63,7 @@ main <- function() {
 #' 
 #' @param x [numeric]
 #' @param t [integer]
+#' @param a,b,c,d [numeric] Used to control the shape of the distribution function, taking values between 0 and 1
 #' 
 #' @example 
 #' run(x, t, verteilung = "truncated_gaussian")
@@ -84,7 +85,7 @@ run <- function(x, t, verteilung = "truncated_gaussian", standardabweichung = 5,
         if (standardabweichung == 5) {
             res <- w_sliding.reflim(x, t, verteilung = verteilung, window.size = NULL, step.width = NULL)
             alist(result.sliding.reflim = res)
-            print("alist finish")
+            # print("alist finish")
         } else {
             res <- w_sliding.reflim(x, t, verteilung = verteilung, window.size = NULL, step.width = NULL, lognormal = lognormal)
             res1 <- w_sliding.reflim(x, t, verteilung = verteilung, standard_deviation = standardabweichung, window.size = NULL, step.width = NULL, lognormal = lognormal)
@@ -117,7 +118,7 @@ alist <- function(result.sliding.reflim,use.mean=T,xlim=NULL,ylim=NULL,xlab=NULL
     # 变量初始化
     rsr <- result.sliding.reflim
     
-    cova <- rsr$covariate.mean
+    cova <- rsr$covariate.mean  # 将mean作为协变量（x轴）
     if (!use.mean){
         cova <- rsr$covariate.mean
     }
@@ -464,7 +465,7 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
     if (verteilung == "gaussian") { # todo
         print("gaussian")
         w_function <- makeWeightFunction("gaussian", sigma = standard_deviation)
-        for (i in seq(min(covcomp), max(covcomp), length.out = n.steps)) {
+        for (i in seq(min(covcomp), max(covcomp), length.out = n.steps)) {  # 生成从 covcomp 的最小值到最大值之间的一个等间距序列
             www <- w_function(covcomp, mean = i)
             
             res.reflim <- w_reflim(xx, www, n.min = n.min, apply.rounding = apply.rounding, lognormal = lognormal, plot.all = TRUE)
@@ -481,13 +482,19 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
             
             covariate.left[i] <- min(covcomp)  # 因为不需要区间，所以用最小值
             covariate.right[i] <- max(covcomp)  # 同样，用最大值
-            covariate.mean[i] <- mean(covcomp)
+            # covariate.mean[i] <- mean(covcomp)
+            covariate.mean[i] <- covcomp[which.max(www)]    # 用mean参数来记录权值最大点
             covariate.median[i] <- median(covcomp)
             covariate.n[i] <- length(covcomp)  # 统计所有协变量的数量
+            
+            plot(covcomp, www, type = "l", col = "blue", lwd = 2, main = paste("Gaussian Weight Function at i =", i))
+            points(covcomp, www, col = "red")
+            www_sum <- sum(www)
+            # text(x = mean(covcomp), y = mean(www),)
         }
     } else {
         if (!is.null(window.size) & !is.null(step.width)) {
-            print("!is.null(window.size) & !is.null(step.width)")
+            print("window.size & step.width not null")
             window.left <- covcomp[1]
             window.right <- window.left + window.size
             for (i in 1:n.steps) {
@@ -725,7 +732,7 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
     
     res <- data.frame(lower.lim,upper.lim,ci.lower.lim.l,ci.lower.lim.u,ci.upper.lim.l,ci.upper.lim.u,distribution.type,covariate.left,covariate.right,covariate.mean,covariate.median,covariate.n,sum.www)
     # 去除数据框中含有 NA 的行
-    res <- res[!is.na(covariate.n),]
+    res <- res[!is.na(covariate.n) & !is.na(lower.lim),]    # todo 删掉附加条件再次尝试
     return(res)
 }
 
