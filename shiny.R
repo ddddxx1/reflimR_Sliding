@@ -356,7 +356,8 @@ server <- function(input, output, session) {
         color_palette <- colorRampPalette(c("white", "black"))(100)
         w_colors <- color_palette[cut(w_values, breaks = 100)]
 
-        w_colors[w_values == 1] <- "red"
+        # w_colors[w_values == 1] <- "red"
+        w_colors[w_values > 0.97] <- "red"
 
         # 绘制散点图，点颜色根据 w 值确定
         plot(as.numeric(segment_data$t),
@@ -397,6 +398,12 @@ shinyApp(ui = ui, server = server)
 
 
 ##### function #####
+
+#' w_sliding.reflim.plot
+#' 
+#' @description 
+#' This function is similar to the w_sliding.reflim function, but only records information about the weights of each point in each loop
+
 w_sliding.reflim.plot <- function(x,covariate,verteilung = "truncated_gaussian", standard_deviation = 5, a = NULL, b = NULL, c = NULL, d = NULL, window.size=NULL,step.width=NULL,lognormal=NULL,perc.trunc=2.5,n.min.window=200,n.min=100,apply.rounding=FALSE)
 {
     # print(paste("sd = ", standard_deviation))
