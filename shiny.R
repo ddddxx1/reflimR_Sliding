@@ -30,6 +30,8 @@ if (require("dplyr")) {
 
 
 
+par(mar = c(1,1,1,1)) # Fix the problem of not being able to display pictures because the window is too small
+
 x <- reflimR::livertests$ALB
 t <- reflimR::livertests$Age
 
@@ -307,7 +309,7 @@ server <- function(input, output, session) {
             # run(user_x, user_t, verteilung = input$verteilung,
             #     standardabweichung = standardabweichung,
             #     window.size = window_size,
-            #     step.width = step_width)    # todo 参数为输入参考限计算中
+            #     step.width = step_width)
         }, error = function(e) {
             return(NULL)
         })
@@ -356,8 +358,8 @@ server <- function(input, output, session) {
         color_palette <- colorRampPalette(c("white", "black"))(100)
         w_colors <- color_palette[cut(w_values, breaks = 100)]
 
-        # w_colors[w_values == 1] <- "red"
-        w_colors[w_values > 0.97] <- "red"
+        w_colors[w_values == 1] <- "red"
+        # w_colors[w_values > 0.97] <- "red"
 
         # 绘制散点图，点颜色根据 w 值确定
         plot(as.numeric(segment_data$t),
@@ -388,7 +390,8 @@ shinyApp(ui = ui, server = server)
 
 
 
-
+# Warning in regularize.values(x, y, ties, missing(ties), na.rm = na.rm) :collapsing to unique 'x' values
+# 输入的 x 值中有重复的数值，而这些函数通常要求 x 值是唯一的。在这种情况下，R会自动将这些重复的 x 值进行“折叠”，即取唯一值，并相应地处理 y 值。
 
 
 
@@ -636,7 +639,7 @@ w_sliding.reflim.plot <- function(x,covariate,verteilung = "truncated_gaussian",
                         # c.value <- quantile(interval_cov, 0.75)
                         # d.value <- max(interval_cov)
                         
-                        w_function <- makeWeightFunction(distribution = verteilung, a = a.value, b = b.value, c = c.value, d = d.value)  # todo
+                        w_function <- makeWeightFunction(distribution = verteilung, a = a.value, b = b.value, c = c.value, d = d.value)
                         # print(w_function)
                         www <- w_function(interval_cov)
                         # print(www)
