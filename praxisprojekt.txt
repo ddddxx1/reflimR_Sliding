@@ -47,4 +47,30 @@ else：
 	如果窗口够大，窗口的左右端点各自向右+1
 	如果窗口不够大，又端点向右+1直到够大为止
 	随后，分布函数在窗口中取第n个百分位点作为分布函数端点进行绘制
+
+
+24.09 Fragen:
+1.
+在运行gaussian分布的时候，r提示Warning in regularize.values(x, y, ties, missing(ties), na.rm = na.rm) :collapsing to unique 'x' values表示在计算过程中遇到了重复的或相同的 x 值
+当 x 中有重复值时，这个函数会尝试将这些重复值处理为唯一值，以避免在绘图或计算统计量时出现问题
+
+在运行truncated_gaussian的时候，尝试使用any(duplicated(xxx))来输出发现在此分布下，Fenster中的x任然存在重复，那么为什么在此分布下不提示warning而只在gaussian中提示
 	
+2.
+对于分布，什么样子的分布应该是需要的。对于有fenster的分布，目前分布函数每个点都依赖于fenster中的点。而对于gaussian，分布函数随机移动 ok
+
+3. todo
+为什么gaussian中没有权值为1的点：测试中似乎是有权值为1的点的，但是图中没有红色的点
+
+
+
+
+verteilungsfunkion soll gleich mit gleich Parameter
+
+Gewichtung  rot - blau
+
+10uhr mittwoch
+任务：
+1. 修改除了gaussian的分布函数，保证分布函数形状始终一致
+2. 为shiny应用第一张图添加颜色		ok
+3. 解决warning

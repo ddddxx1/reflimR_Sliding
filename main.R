@@ -52,6 +52,12 @@ main <- function() {
   t <- t[is.nona]
   w <- w[is.nona]
   
+  for (i in 1:length(x)) {
+      print(x[i])
+      print(t[i])
+      print(" ")
+  }
+  
 }
 
 
@@ -71,6 +77,7 @@ main <- function() {
 #' @export
 
 run <- function(x, t, verteilung = "truncated_gaussian", standardabweichung = 5, a = NULL, b = NULL, c = NULL, d = NULL, window.size=NULL,step.width=NULL,lognormal=NULL,perc.trunc=2.5,n.min.window=200,n.min=100,apply.rounding=FALSE) {
+    par(mar = c(1,1,1,1))
     if (verteilung == "truncated_gaussian") {
         if (standardabweichung == 5) {
             res <- w_sliding.reflim(x, t,verteilung = verteilung, window.size = window.size, step.width = step.width, lognormal = lognormal)
@@ -468,7 +475,7 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
         for (i in seq(min(covcomp), max(covcomp), length.out = n.steps)) {  # 生成从 covcomp 的最小值到最大值之间的一个等间距序列
             www <- w_function(covcomp, mean = i)
             
-            res.reflim <- w_reflim(xx, www, n.min = n.min, apply.rounding = apply.rounding, lognormal = lognormal, plot.all = TRUE)
+            res.reflim <- w_reflim(xx, www, n.min = n.min, apply.rounding = apply.rounding, lognormal = lognormal, plot.all = FALSE)
             
             lower.lim[i] <- res.reflim$limits[1]
             upper.lim[i] <- res.reflim$limits[2]
@@ -567,7 +574,7 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
                     
                     
                     if (sum.www[i] > 100) {
-                        res.reflim <- w_reflim(xxx, www, n.min = n.min, apply.rounding = apply.rounding, lognormal = lognormal, plot.all = TRUE)
+                        res.reflim <- w_reflim(xxx, www, n.min = n.min, apply.rounding = apply.rounding, lognormal = lognormal, plot.all = FALSE)
                         
                         
                         lower.lim[i] <- res.reflim$limits[1]
@@ -601,7 +608,7 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
                 window.right <- window.right + step.width
             }
         } else {
-            print("ELSE")
+            print("window.size & step.width is null")
             ind <- 1
             indl <- 1
             indr <- 2
@@ -622,6 +629,8 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
                     
                     
                     if (verteilung == "truncated_gaussian") {
+                        # print(xxx)
+                        # print(any(duplicated(xxx)))
                         w_function <- makeWeightFunction(verteilung, sigma = standard_deviation)
                         www <- w_function(interval_cov, mean = median(interval_cov))
                     } else if (verteilung == "triangular") {
@@ -679,7 +688,7 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
                     # }
                     
                     if (sum.www[ind] > 100) {
-                        res.reflim <- w_reflim(xxx, www, n.min = n.min, apply.rounding = apply.rounding, lognormal = lognormal, plot.all = TRUE)
+                        res.reflim <- w_reflim(xxx, www, n.min = n.min, apply.rounding = apply.rounding, lognormal = lognormal, plot.all = FALSE)
                         # print(res.reflim)
                         
                         lower.lim[ind] <- res.reflim$limits[1]
@@ -733,6 +742,7 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
     res <- data.frame(lower.lim,upper.lim,ci.lower.lim.l,ci.lower.lim.u,ci.upper.lim.l,ci.upper.lim.u,distribution.type,covariate.left,covariate.right,covariate.mean,covariate.median,covariate.n,sum.www)
     # 去除数据框中含有 NA 的行
     res <- res[!is.na(covariate.n) & !is.na(lower.lim),]    # todo 删掉附加条件再次尝试
+    # res <- res[!is.na(covariate.n),]
     return(res)
 }
 
@@ -744,7 +754,7 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
 
 # targets提供目标上下限
 w_reflim <- function (x, x_weight, lognormal = NULL, targets = NULL, perc.trunc = 2.5,
-             n.min = 200, apply.rounding = TRUE, plot.it = TRUE, plot.all = TRUE, 
+             n.min = 200, apply.rounding = TRUE, plot.it = FALSE, plot.all = FALSE, 
              print.n = TRUE, main = "reference limits", xlab = "x") 
 {
     # reflimR für conf_int95
@@ -832,13 +842,13 @@ w_reflim <- function (x, x_weight, lognormal = NULL, targets = NULL, perc.trunc 
     digits <- adjust_digits(median(x_clean))$digits
     if (is.null(lognormal)) {
         plot.logtype <- TRUE
-        lognormal <- w_lognorm(x_clean, ww_clean)$lognormal
+        lognormal <- w_lognorm(x_clean, ww_clean)$lognormal  # warning
     } else {
         plot.logtype <- FALSE
     }
     # Error zeigen
     # print(paste("is x == x_clean ?", all(x, x_clean)))
-    
+
     res.lognorm <- w_lognorm(x_clean, ww_clean, plot.it = FALSE)
     res.trunc <- w_iboxplot(x_clean, ww_clean, lognormal = lognormal, perc.trunc = perc.trunc,
                             apply.rounding = apply.rounding, plot.it = FALSE)
@@ -947,7 +957,7 @@ w_reflim <- function (x, x_weight, lognormal = NULL, targets = NULL, perc.trunc 
 #' w_bowley
 #' 
 #' @description 
-#' 计算偏度度量，判断对称性
+#' Beurteilung der Symmetrie
 #' 
 #' @export
 
@@ -989,9 +999,9 @@ w_lognorm <- function(x, x_weight, cutoff = 0.05, digits = 3, plot.it = FALSE, x
   if (min(x) <= 0) {
     stop("Negative values not allowed.")
   }
-  bs <- rep(NA, 2)
-  bs[1] <- w_bowley(x, x_weight)
-  bs[2] <- w_bowley(log(x), x_weight)
+    bs <- rep(NA, 2)
+    bs[1] <- w_bowley(x, x_weight)  # warning
+    bs[2] <- w_bowley(log(x), x_weight) # warning
   
   # delta kann bestimmen, ob die logarithmische Transformation die Schiefe der Daten erheblich verringert
   if (bs[1] < 0) {
@@ -1072,7 +1082,7 @@ w_lognorm <- function(x, x_weight, cutoff = 0.05, digits = 3, plot.it = FALSE, x
 #' @export
 
 w_iboxplot <- function(x, x_weight, lognormal = NULL, perc.trunc = 2.5,
-                       apply.rounding = TRUE, plot.it = TRUE, main = "w_iBoxplot", xlab = "x") {
+                       apply.rounding = TRUE, plot.it = FALSE, main = "w_iBoxplot", xlab = "x") {
   # reflimR für adjust_digits
   if (require("reflimR")) {
     library(reflimR)
@@ -1212,7 +1222,7 @@ w_iboxplot <- function(x, x_weight, lognormal = NULL, perc.trunc = 2.5,
 #' @export
 
 w_truncated_qqplot <- function(x, x_weight, lognormal = NULL, perc.trunc = 2.5, n.min = 200,
-                               apply.rounding = TRUE, plot.it = TRUE, main = "w_Q-Q plot",
+                               apply.rounding = TRUE, plot.it = FALSE, main = "w_Q-Q plot",
                                xlab = "theoretical quantiles", ylab = "sample quantiles") 
 {
   # Hmisc für wtd.quantile

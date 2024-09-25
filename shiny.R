@@ -121,7 +121,7 @@ ui <- fluidPage(
 
         mainPanel(
             fluidRow(
-                column(12, plotOutput("scatterPlot")),
+                column(12, plotOutput("scatterPlot"), uiOutput("textBelowPlot")),
                 column(12, plotOutput("scatterPlot2"))
             ),
             textOutput("errorMessage")
@@ -359,6 +359,9 @@ server <- function(input, output, session) {
         w_colors <- color_palette[cut(w_values, breaks = 100)]
 
         w_colors[w_values == 1] <- "red"
+        w_colors[w_values >= 0.8 & w_values < 1] <- "blue"
+        w_colors[w_values >= 0.5 & w_values < 0.8] <- "green"
+        
         # w_colors[w_values > 0.97] <- "red"
 
         # 绘制散点图，点颜色根据 w 值确定
@@ -369,6 +372,13 @@ server <- function(input, output, session) {
              main = paste("Scatter Plot for Segment", segment_index, "with Distribution:", input$verteilung),
              pch = 16,
              col = w_colors)
+    })
+    
+    output$textBelowPlot <- renderUI({
+        HTML("<p style='color:red;'>Gewichtung = 1</p>
+              <p style='color:blue;'>ewichtung >= 0.8 and < 1</p>
+              <p style='color:green;'>Gewichtung >= 0.5 and < 0.8</p>
+              <p style='color:black;'>Gewichtung < 0.5</p>")
     })
 
     output$scatterPlot2 <- renderPlot({
@@ -392,6 +402,24 @@ shinyApp(ui = ui, server = server)
 
 # Warning in regularize.values(x, y, ties, missing(ties), na.rm = na.rm) :collapsing to unique 'x' values
 # 输入的 x 值中有重复的数值，而这些函数通常要求 x 值是唯一的。在这种情况下，R会自动将这些重复的 x 值进行“折叠”，即取唯一值，并相应地处理 y 值。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -463,10 +491,18 @@ w_sliding.reflim.plot <- function(x,covariate,verteilung = "truncated_gaussian",
     if (verteilung == "gaussian") {
         print("gaussian")
         w_function <- makeWeightFunction("gaussian", sigma = standard_deviation)
+        # print("after makeweight")
         for (i in seq(min(covcomp), max(covcomp), length.out = n.steps)) {  # 生成从 covcomp 的最小值到最大值之间的一个等间距序列
             www <- w_function(covcomp, mean = i)
+            
+            # if (any(www == 1)) {
+            #     print("true")
+            # } else {
+            #     print("false")
+            # }
 
-            res.reflim <- w_reflim(xx, www, n.min = n.min, apply.rounding = apply.rounding, lognormal = lognormal, plot.all = TRUE)
+            res.reflim <- w_reflim(xx, www, n.min = n.min, apply.rounding = apply.rounding, lognormal = lognormal, plot.all = TRUE) # warning
+            # 输入的 x 值中有重复的数值，而这些函数通常要求 x 值是唯一的。在这种情况下，R会自动将这些重复的 x 值进行“折叠”，即取唯一值，并相应地处理 y 值。
             loop <- loop + 1
 
             # lower.lim[i] <- res.reflim$limits[1]
@@ -576,7 +612,7 @@ w_sliding.reflim.plot <- function(x,covariate,verteilung = "truncated_gaussian",
                 window.right <- window.right + step.width
             }
         } else {
-            print("ELSE")
+            print("window.size & step.width is null")
             ind <- 1
             indl <- 1
             indr <- 2
