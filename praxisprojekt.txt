@@ -72,5 +72,8 @@ Gewichtung  rot - blau
 10uhr mittwoch
 任务：
 1. 修改除了gaussian的分布函数，保证分布函数形状始终一致
+完成了对中间参数的固定，但是还要考虑窗口大小的问题
+ 查看 truncated gaussian参数修改或者删掉此分布
+
 2. 为shiny应用第一张图添加颜色		ok
 3. 解决warning

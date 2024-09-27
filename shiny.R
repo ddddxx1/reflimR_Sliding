@@ -26,6 +26,13 @@ if (require("dplyr")) {
     library(dplyr)
 }
 
+if (require("shinycssloaders")) {
+    library(shinycssloaders)
+} else {
+    install.packages("shinycssloaders")
+    library(shinycssloaders)
+}
+
 
 
 
@@ -99,9 +106,9 @@ ui <- fluidPage(
               numericInput("step_width",
                            "Step Width:",
                            value = NULL),
-              numericInput("a", "Parameter a:", value = 0),
-              numericInput("b", "Paramater b:", value = 0.5),
-              numericInput("c", "Paramater c:", value = 1)
+              # numericInput("a", "Parameter a:", value = 0),
+              numericInput("b", "Paramater b:", value = 0.5)
+              # numericInput("c", "Paramater c:", value = 1)
             ),
             # for trapezoidal
             conditionalPanel(
@@ -112,35 +119,25 @@ ui <- fluidPage(
               numericInput("step_width",
                            "Step Width:",
                            value = NULL),
-              numericInput("a_trap", "Parameter a:", value = 0),
-              numericInput("b_trap", "Parameter b:", value = 0.25),
-              numericInput("c_trap", "Parameter c:", value = 0.75),
-              numericInput("d_trap", "Parameter d:", value = 1)
+              # numericInput("a_trap", "Parameter a:", value = 0),
+              numericInput("b_trap", "Parameter b:", value = 0.3),
+              numericInput("c_trap", "Parameter c:", value = 0.6)
+              # numericInput("d_trap", "Parameter d:", value = 1)
             )
         ),
 
         mainPanel(
             fluidRow(
                 column(12, plotOutput("scatterPlot"), uiOutput("textBelowPlot")),
-                column(12, plotOutput("scatterPlot2"))
+                column(12, withSpinner(plotOutput("scatterPlot2")))
             ),
             textOutput("errorMessage")
         )
     )
 )
 
-# 调用了run / w_sliding.reflim.plot
+
 server <- function(input, output, session) {
-
-    # uploaded_data <- reactive({
-    #     if (is.null(input$datafile)) {
-    #         return(list(x = x, t = t))
-    #     } else {
-    #         uploaded <- read.csv(input$datafile$datapath)
-    #         return(list(x = uploaded$x, t = uploaded$t))
-    #     }
-    # })
-
     uploaded_data <- reactive({
       if (is.null(input$datafile)) {
         return(NULL)
@@ -193,15 +190,6 @@ server <- function(input, output, session) {
         } else {
             step_width <- input$step_width
         }
-        
-        # standardabweichung <- if(input$verteilung == "gaussian") input$standardabweichung
-        # a <- if (input$verteilung == "triangular") input$a
-        # b <- if (input$verteilung == "triangular") input$b
-        # c <- if (input$verteilung == "triangular") input$c
-        # a_trap <- if (input$verteilung == "trapezoidal") input$a_trap
-        # b_trap <- if (input$verteilung == "trapezoidal") input$b_trap
-        # c_trap <- if (input$verteilung == "trapezoidal") input$c_trap
-        # d_trap <- if (input$verteilung == "trapezoidal") input$d_trap
 
         standardabweichung <- input$standardabweichung
         a <- input$a
@@ -211,6 +199,7 @@ server <- function(input, output, session) {
         b_trap <- input$b_trap
         c_trap <- input$c_trap
         d_trap <- input$d_trap
+        
         
 
         result <- tryCatch({
@@ -549,15 +538,23 @@ w_sliding.reflim.plot <- function(x,covariate,verteilung = "truncated_gaussian",
                     
                     if (verteilung == "truncated_gaussian") {
                         w_function <- makeWeightFunction(verteilung, sigma = standard_deviation)
-                        www <- w_function(interval_cov, mean = median(interval_cov))
+                        # www <- w_function(interval_cov, mean = median(interval_cov))
+                        www <- w_function(interval_cov, mean = (min(interval_cov) + max(interval_cov)) / 2)
                     } else if (verteilung == "triangular") {
-                        a <- if (is.null(a)) 0 else a
-                        b <- if (is.null(b)) 0.5 else b
-                        c <- if (is.null(c)) 1 else c
+                        # a <- if (is.null(a)) 0 else a
+                        # b <- if (is.null(b)) 0.5 else b
+                        # c <- if (is.null(c)) 1 else c
+                        # 
+                        # a.value <- quantile(interval_cov, a)
+                        # b.value <- quantile(interval_cov, b)
+                        # c.value <- quantile(interval_cov, c)
                         
-                        a.value <- quantile(interval_cov, a)
-                        b.value <- quantile(interval_cov, b)
-                        c.value <- quantile(interval_cov, c)
+                        b <- if (is.null(b)) 0.5 else b
+                        print(b)
+                        
+                        a.value <- min(interval_cov)
+                        c.value <- max(interval_cov)
+                        b.value <- (c.value - a.value) * b + a.value
                         
                         # a.value <- min(interval_cov)
                         # b.value <- median(interval_cov)
@@ -565,15 +562,25 @@ w_sliding.reflim.plot <- function(x,covariate,verteilung = "truncated_gaussian",
                         w_function <- makeWeightFunction(verteilung, a = a.value, b = b.value, c = c.value)
                         www <- w_function(interval_cov)
                     } else if (verteilung == "trapezoidal") {
-                        a <- if (is.null(a)) 0 else a
-                        b <- if (is.null(b)) 0.25 else b
-                        c <- if (is.null(c)) 0.75 else c
-                        d <- if (is.null(d)) 1 else d
+                        # a <- if (is.null(a)) 0 else a
+                        # b <- if (is.null(b)) 0.25 else b
+                        # c <- if (is.null(c)) 0.75 else c
+                        # d <- if (is.null(d)) 1 else d
+                        # 
+                        # a.value <- quantile(interval_cov, a)
+                        # b.value <- quantile(interval_cov, b)
+                        # c.value <- quantile(interval_cov, c)
+                        # d.value <- quantile(interval_cov, d)
                         
-                        a.value <- quantile(interval_cov, a)
-                        b.value <- quantile(interval_cov, b)
-                        c.value <- quantile(interval_cov, c)
-                        d.value <- quantile(interval_cov, d)
+                        b <- if (is.null(b)) 0.3 else b
+                        c <- if (is.null(c)) 0.6 else c
+                        print(b)
+                        print(c)
+                        
+                        a.value <- min(interval_cov)
+                        d.value <- max(interval_cov)
+                        b.value <- (d.value - a.value) * b + a.value
+                        c.value <- (d.value - b.value) * c + a.value
                         
                         # a.value <- min(interval_cov)
                         # b.value <- quantile(interval_cov, 0.25)
@@ -597,7 +604,7 @@ w_sliding.reflim.plot <- function(x,covariate,verteilung = "truncated_gaussian",
                     
                     
                     
-                    if (sum.www[i] > 100) {
+                    if (sum.www[i] > 100 || TRUE) {
                         res.reflim <- w_reflim(xxx, www, n.min = n.min, apply.rounding = apply.rounding, lognormal = lognormal, plot.all = TRUE)
                         loop <- loop + 1
                         
@@ -633,15 +640,23 @@ w_sliding.reflim.plot <- function(x,covariate,verteilung = "truncated_gaussian",
                     
                     if (verteilung == "truncated_gaussian") {
                         w_function <- makeWeightFunction(distribution = verteilung, sigma = standard_deviation)
-                        www <- w_function(interval_cov, mean = as.numeric(median(interval_cov)))
+                        # www <- w_function(interval_cov, mean = as.numeric(median(interval_cov)))
+                        www <- w_function(interval_cov, mean = (min(interval_cov) + max(interval_cov)) / 2)
                     } else if (verteilung == "triangular") {
-                        a <- if (is.null(a)) 0 else a
-                        b <- if (is.null(b)) 0.5 else b
-                        c <- if (is.null(c)) 1 else c
+                        # a <- if (is.null(a)) 0 else a
+                        # b <- if (is.null(b)) 0.5 else b
+                        # c <- if (is.null(c)) 1 else c
+                        # 
+                        # a.value <- quantile(interval_cov, a)
+                        # b.value <- quantile(interval_cov, b)
+                        # c.value <- quantile(interval_cov, c)
                         
-                        a.value <- quantile(interval_cov, a)
-                        b.value <- quantile(interval_cov, b)
-                        c.value <- quantile(interval_cov, c)
+                        b <- if (is.null(b)) 0.5 else b
+                        print(b)
+                        
+                        a.value <- min(interval_cov)
+                        c.value <- max(interval_cov)
+                        b.value <- (c.value - a.value) * b + a.value
                         
                         # a.value <- min(interval_cov)
                         # b.value <- median(interval_cov)
@@ -649,20 +664,30 @@ w_sliding.reflim.plot <- function(x,covariate,verteilung = "truncated_gaussian",
                         w_function <- makeWeightFunction(verteilung, a = a.value, b = b.value, c = c.value) # 需要加权函数参数
                         www <- w_function(interval_cov)
                     } else if (verteilung == "trapezoidal") {
-                        a <- if (is.null(a)) 0 else a
-                        b <- if (is.null(b)) 0.25 else b
-                        c <- if (is.null(c)) 0.75 else c
-                        d <- if (is.null(d)) 1 else d
+                        # a <- if (is.null(a)) 0 else a
+                        # b <- if (is.null(b)) 0.25 else b
+                        # c <- if (is.null(c)) 0.75 else c
+                        # d <- if (is.null(d)) 1 else d
                         
                         # print(paste("a,", a))
                         # print(paste("b,", b))
                         # print(paste("c,", c))
                         # print(paste("d,", d))
                         
-                        a.value <- quantile(interval_cov, a)
-                        b.value <- quantile(interval_cov, b)
-                        c.value <- quantile(interval_cov, c)
-                        d.value <- quantile(interval_cov, d)
+                        # a.value <- quantile(interval_cov, a)
+                        # b.value <- quantile(interval_cov, b)
+                        # c.value <- quantile(interval_cov, c)
+                        # d.value <- quantile(interval_cov, d)
+                        
+                        b <- if (is.null(b)) 0.3 else b
+                        c <- if (is.null(c)) 0.6 else c
+                        print(b)
+                        print(c)
+                        
+                        a.value <- min(interval_cov)
+                        d.value <- max(interval_cov)
+                        b.value <- (d.value - a.value) * b + a.value
+                        c.value <- (d.value - b.value) * c + a.value
                         
                         
                         # print(paste("a.value ", a.value))
@@ -710,7 +735,7 @@ w_sliding.reflim.plot <- function(x,covariate,verteilung = "truncated_gaussian",
                     #     indr <- indr + 1
                     # }
                     
-                    if (sum.www[ind] > 100) { # ERROR -> null
+                    if (sum.www[ind] > 100 || TRUE) { # ERROR -> null
                         res.reflim <- w_reflim(xxx, www, n.min = n.min, apply.rounding = apply.rounding, lognormal = lognormal, plot.all = TRUE)
                         loop <- loop + 1
                         # print(res.reflim)
