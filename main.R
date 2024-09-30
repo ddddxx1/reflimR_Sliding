@@ -1,15 +1,4 @@
-# 数据量不足时的平滑处理：在某些区间内数据点较少的情况下，未加权的滑动窗口可能会给出不可靠的参考区间。加权滑动窗口能够将附近数据点的影响考虑进来，从而平滑结果，避免某些区间数据量不足导致的波动。
-# 边界效应：在窗口边界处，未加权的滑动窗口可能会受到边界数据稀疏或异常值的影响较大。加权处理可以减少这种边界效应，将更多的注意力放在中心数据点上，而对边界数据点的权重降低。
-# 连续性和稳定性：加权滑动窗口可以使得参考区间在随窗口移动时更加连续和平滑，减少剧烈波动，从而提供更稳定的参考区间。
-# 灵活性：通过调整权重函数的形状和参数，可以灵活控制不同数据点对参考区间计算的影响，从而适应不同的应用场景和数据分布特点。
-# 
-# 
-# 更新：09.01
-# 1. 增加了加权函数的灵活性，可以使用三种不同的分布函数
-# 2.确保尺度无关skalenunabhängig，加权函数的在分布的中心点标准化为1
-# 
-# 问题：
-
+# The main function doesn't work, please call the run function.
 main <- function() {
   # x <- reflimR::livertests$ALB[1:100]
   # t <- reflimR::livertests$Age[1:100]
@@ -69,14 +58,14 @@ main <- function() {
 #' 
 #' @param x [numeric]
 #' @param t [integer]
-#' @param a,b,c,d [numeric] Used to control the shape of the distribution function, taking values between 0 and 1
+#' @param a,b,c,d [numeric] Used to control the shape of the triangular and trapezoidal distribution function, taking values between 0 and 1
 #' 
 #' @example 
 #' run(x, t, verteilung = "truncated_gaussian")
 #' 
 #' @export
 
-run <- function(x, t, verteilung = "truncated_gaussian", standardabweichung = 5, a = NULL, b = NULL, c = NULL, d = NULL, window.size=NULL,step.width=NULL,lognormal=NULL,perc.trunc=2.5,n.min.window=200,n.min=100,apply.rounding=FALSE) {
+run <- function(x, t, verteilung = "truncated_gaussian", standardabweichung = 5, b = NULL, c = NULL, window.size=NULL,step.width=NULL,lognormal=NULL,perc.trunc=2.5,n.min.window=200,n.min=100,apply.rounding=FALSE) {
     par(mar = c(1,1,1,1))
     if (verteilung == "truncated_gaussian") {
         if (standardabweichung == 5) {
@@ -88,7 +77,7 @@ run <- function(x, t, verteilung = "truncated_gaussian", standardabweichung = 5,
             # alist(res)
             alist1(res, res1)
         }
-    } else if (verteilung == "gaussian") {  # todo
+    } else if (verteilung == "gaussian") {
         if (standardabweichung == 5) {
             res <- w_sliding.reflim(x, t, verteilung = verteilung, window.size = NULL, step.width = NULL)
             alist(result.sliding.reflim = res)
@@ -122,7 +111,6 @@ run <- function(x, t, verteilung = "truncated_gaussian", standardabweichung = 5,
 
 alist <- function(result.sliding.reflim,use.mean=T,xlim=NULL,ylim=NULL,xlab=NULL,ylab=NULL,col.low=c(0,0,1),col.upp=c(1,0,0),lwd=2,transparency=0.8,draw.cis=T,grid.col=NULL,log="",cut.at=1){
     
-    # 变量初始化
     rsr <- result.sliding.reflim
     
     cova <- rsr$covariate.mean  # 将mean作为协变量（x轴）
@@ -367,7 +355,7 @@ makeWeightFunction <- function(distribution = "truncated_gaussian", ...) {
         return(function(x, mean) { # mean将区间内x的中位数传入，不需要用户自己更改
             dnorm(x, mean = mean, sd = sigma) / dnorm(mean, mean = mean, sd = sigma)
         })
-    } else if (distribution == "gaussian") {    # todo
+    } else if (distribution == "gaussian") {
         sigma <- list(...)$sigma
         if (is.null(sigma)) {
             sigma <- 5
@@ -469,7 +457,7 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
     # print("xx")
     # print(xx)
     
-    if (verteilung == "gaussian") { # todo
+    if (verteilung == "gaussian") {
         print("gaussian")
         w_function <- makeWeightFunction("gaussian", sigma = standard_deviation)
         for (i in seq(min(covcomp), max(covcomp), length.out = n.steps)) {  # 生成从 covcomp 的最小值到最大值之间的一个等间距序列
@@ -523,15 +511,22 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
                     
                     if (verteilung == "truncated_gaussian") {
                         w_function <- makeWeightFunction(verteilung, sigma = standard_deviation)
-                        www <- w_function(interval_cov, mean = median(interval_cov))
+                        # www <- w_function(interval_cov, mean = median(interval_cov))
+                        www <- w_function(interval_cov, mean = (min(interval_cov) + max(interval_cov)) / 2)
                     } else if (verteilung == "triangular") {
-                        a <- if (is.null(a)) 0 else a
-                        b <- if (is.null(b)) 0.5 else b
-                        c <- if (is.null(c)) 1 else c
+                        # a <- if (is.null(a)) 0 else a
+                        # b <- if (is.null(b)) 0.5 else b
+                        # c <- if (is.null(c)) 1 else c
+                        # 
+                        # a.value <- quantile(interval_cov, a)
+                        # b.value <- quantile(interval_cov, b)
+                        # c.value <- quantile(interval_cov, c)
                         
-                        a.value <- quantile(interval_cov, a)
-                        b.value <- quantile(interval_cov, b)
-                        c.value <- quantile(interval_cov, c)
+                        b <- if (is.null(b)) 0.5 else b
+                        
+                        a.value <- min(interval_cov)
+                        c.value <- max(interval_cov)
+                        b.value <- (c.value - a.value) * b + a.value
                         
                         # print(paste("a.value =", a.value))
                         # print(paste("b.value =", b.value))
@@ -544,15 +539,23 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
                         w_function <- makeWeightFunction(verteilung, a = a.value, b = b.value, c = c.value)  # 这里需要分布函数参数
                         www <- w_function(interval_cov)
                     } else if (verteilung == "trapezoidal") {
-                        a <- if (is.null(a)) 0 else a
-                        b <- if (is.null(b)) 0.25 else b
-                        c <- if (is.null(c)) 0.75 else c
-                        d <- if (is.null(d)) 1 else d
+                        # a <- if (is.null(a)) 0 else a
+                        # b <- if (is.null(b)) 0.25 else b
+                        # c <- if (is.null(c)) 0.75 else c
+                        # d <- if (is.null(d)) 1 else d
+                        # 
+                        # a.value <- quantile(interval_cov, a)
+                        # b.value <- quantile(interval_cov, b)
+                        # c.value <- quantile(interval_cov, c)
+                        # d.value <- quantile(interval_cov, d)
                         
-                        a.value <- quantile(interval_cov, a)
-                        b.value <- quantile(interval_cov, b)
-                        c.value <- quantile(interval_cov, c)
-                        d.value <- quantile(interval_cov, d)
+                        b <- if (is.null(b)) 0.3 else b
+                        c <- if (is.null(c)) 0.6 else c
+                        
+                        a.value <- min(interval_cov)
+                        d.value <- max(interval_cov)
+                        b.value <- (d.value - a.value) * b + a.value
+                        c.value <- (d.value - a.value) * c + a.value
                         
                         # a.value <- min(interval_cov)
                         # b.value <- quantile(interval_cov, 0.25) 
@@ -573,7 +576,7 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
                     
                     
                     
-                    if (sum.www[i] > 100) {
+                    if (sum.www[i] > 100 || TRUE) {
                         res.reflim <- w_reflim(xxx, www, n.min = n.min, apply.rounding = apply.rounding, lognormal = lognormal, plot.all = FALSE)
                         
                         
@@ -608,7 +611,7 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
                 window.right <- window.right + step.width
             }
         } else {
-            print("window.size & step.width is null")
+            print("window.size or step.width is null")
             ind <- 1
             indl <- 1
             indr <- 2
@@ -628,47 +631,49 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
                     # www <- gaussian(interval_cov, mean = median(interval_cov))
                     
                     
-                    if (verteilung == "truncated_gaussian") {
+                    if (verteilung == "truncated_gaussian") {  # todo
                         # print(xxx)
                         # print(any(duplicated(xxx)))
                         w_function <- makeWeightFunction(verteilung, sigma = standard_deviation)
-                        www <- w_function(interval_cov, mean = median(interval_cov))
+                        # www <- w_function(interval_cov, mean = median(interval_cov))
+                        www <- w_function(interval_cov, mean = (min(interval_cov) + max(interval_cov)) / 2)
                     } else if (verteilung == "triangular") {
-                        a <- if (is.null(a)) 0 else a
+                        # a <- if (is.null(a)) 0 else a
+                        # b <- if (is.null(b)) 0.5 else b
+                        # c <- if (is.null(c)) 1 else c
+                        # 
+                        # a.value <- quantile(interval_cov, a)
+                        # b.value <- quantile(interval_cov, b)
+                        # c.value <- quantile(interval_cov, c)
+                        
                         b <- if (is.null(b)) 0.5 else b
-                        c <- if (is.null(c)) 1 else c
                         
-                        a.value <- quantile(interval_cov, a)
-                        b.value <- quantile(interval_cov, b)
-                        c.value <- quantile(interval_cov, c)
-                        
-                        # print(paste("a.value =", a.value))
-                        # print(paste("b.value =", b.value))
-                        # print(paste("c.value =", c.value))
-                        # print("---")
-                        
-                        # a.value <- min(interval_cov)
-                        # b.value <- median(interval_cov)
-                        # c.value <- max(interval_cov)
+                        a.value <- min(interval_cov)
+                        c.value <- max(interval_cov)
+                        b.value <- (c.value - a.value) * b + a.value
+
                         w_function <- makeWeightFunction(verteilung, a = a.value, b = b.value, c = c.value)
                         www <- w_function(interval_cov)
                     } else if (verteilung == "trapezoidal") {
-                        a <- if (is.null(a)) 0 else a
-                        b <- if (is.null(b)) 0.25 else b
-                        c <- if (is.null(c)) 0.75 else c
-                        d <- if (is.null(d)) 1 else d
+                        # a <- if (is.null(a)) 0 else a
+                        # b <- if (is.null(b)) 0.25 else b
+                        # c <- if (is.null(c)) 0.75 else c
+                        # d <- if (is.null(d)) 1 else d
+                        # 
+                        # a.value <- quantile(interval_cov, a)
+                        # b.value <- quantile(interval_cov, b)
+                        # c.value <- quantile(interval_cov, c)
+                        # d.value <- quantile(interval_cov, d)
                         
-                        a.value <- quantile(interval_cov, a)
-                        b.value <- quantile(interval_cov, b)
-                        c.value <- quantile(interval_cov, c)
-                        d.value <- quantile(interval_cov, d)
+                        b <- if (is.null(b)) 0.3 else b
+                        c <- if (is.null(c)) 0.6 else c
                         
-                        # a.value <- min(interval_cov)
-                        # b.value <- quantile(interval_cov, 0.25)
-                        # c.value <- quantile(interval_cov, 0.75)
-                        # d.value <- max(interval_cov)
+                        a.value <- min(interval_cov)
+                        d.value <- max(interval_cov)
+                        b.value <- (d.value - a.value) * b + a.value
+                        c.value <- (d.value - a.value) * c + a.value
                         
-                        w_function <- makeWeightFunction(distribution = verteilung, a = a.value, b = b.value, c = c.value, d = d.value)  # todo
+                        w_function <- makeWeightFunction(distribution = verteilung, a = a.value, b = b.value, c = c.value, d = d.value)
                         www <- w_function(interval_cov)
                     }
                     
@@ -687,7 +692,7 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
                     #     indr <- indr + 1
                     # }
                     
-                    if (sum.www[ind] > 100) {
+                    if (sum.www[ind] > 100 || TRUE) {
                         res.reflim <- w_reflim(xxx, www, n.min = n.min, apply.rounding = apply.rounding, lognormal = lognormal, plot.all = FALSE)
                         # print(res.reflim)
                         
