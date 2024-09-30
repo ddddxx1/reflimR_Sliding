@@ -215,12 +215,12 @@ server <- function(input, output, session) {
                                            step.width = NULL)
           } else if (input$verteilung == "triangular") {
             res <- w_sliding.reflim.plot(user_x, user_t, verteilung = input$verteilung,
-                                         a = a, b = b, c = c,
+                                         b = b,
                                          window.size = window_size,
                                          step.width = step_width)
           } else if (input$verteilung == "trapezoidal") {
             res <- w_sliding.reflim.plot(user_x, user_t, verteilung = input$verteilung,
-                                         a = a_trap, b = b_trap, c = c_trap, d = d_trap,
+                                         b = b_trap, c = c_trap,
                                          window.size = window_size,
                                          step.width = step_width)
           }
@@ -295,10 +295,6 @@ server <- function(input, output, session) {
                     step.width = step_width)
             }
             
-            # run(user_x, user_t, verteilung = input$verteilung,
-            #     standardabweichung = standardabweichung,
-            #     window.size = window_size,
-            #     step.width = step_width)
         }, error = function(e) {
             return(NULL)
         })
@@ -342,7 +338,7 @@ server <- function(input, output, session) {
         # 提取该段的数据
         segment_data <- res[start_row:end_row, ]
 
-        # 将 w 转换为灰度颜色
+        # color
         w_values <- as.numeric(segment_data$w)
         color_palette <- colorRampPalette(c("white", "black"))(100)
         w_colors <- color_palette[cut(w_values, breaks = 100)]
@@ -350,10 +346,7 @@ server <- function(input, output, session) {
         w_colors[w_values == 1] <- "red"
         w_colors[w_values >= 0.8 & w_values < 1] <- "blue"
         w_colors[w_values >= 0.5 & w_values < 0.8] <- "green"
-        
-        # w_colors[w_values > 0.97] <- "red"
 
-        # 绘制散点图，点颜色根据 w 值确定
         plot(as.numeric(segment_data$t),
              as.numeric(segment_data$x),
              xlab = "t",
@@ -424,7 +417,7 @@ server <- function(input, output, session) {
 #' @description 
 #' This function is similar to the w_sliding.reflim function, but only records information about the weights of each point in each loop
 
-w_sliding.reflim.plot <- function(x,covariate,verteilung = "truncated_gaussian", standard_deviation = 5, a = NULL, b = NULL, c = NULL, d = NULL, window.size=NULL,step.width=NULL,lognormal=NULL,perc.trunc=2.5,n.min.window=200,n.min=100,apply.rounding=FALSE)
+w_sliding.reflim.plot <- function(x,covariate,verteilung = "truncated_gaussian", standard_deviation = 5, b = NULL, c = NULL, window.size=NULL,step.width=NULL,lognormal=NULL,perc.trunc=2.5,n.min.window=200,n.min=100,apply.rounding=FALSE)
 {
     # print(paste("sd = ", standard_deviation))
     
