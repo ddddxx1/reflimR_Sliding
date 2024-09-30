@@ -87,14 +87,14 @@ ui <- fluidPage(
                            "Step Width:",
                            value = NULL),
               numericInput("standardabweichung",
-                           "Standardabweichung:",
+                           "Standard deviation:",
                            value = 5)
             ),
             # for gaussian
             conditionalPanel(
                 condition = "input.verteilung == 'gaussian'",
                 numericInput("standardabweichung",
-                             "Standardabweichung:",
+                             "Standard deviation:",
                              value = 5)
             ),
             # for triangular
@@ -285,12 +285,12 @@ server <- function(input, output, session) {
                     step.width = NULL)
             } else if (input$verteilung == "triangular") {
                 run(user_x, user_t, verteilung = input$verteilung,
-                    a = a, b = b, c = c,
+                    b = b,
                     window.size = window_size,
                     step.width = step_width)
             } else if (input$verteilung == "trapezoidal") {
                 run(user_x, user_t, verteilung = input$verteilung,
-                    a = a_trap, b = b_trap, c = c_trap, d = d_trap,
+                     b = b_trap, c = c_trap,
                     window.size = window_size,
                     step.width = step_width)
             }
@@ -364,10 +364,10 @@ server <- function(input, output, session) {
     })
     
     output$textBelowPlot <- renderUI({
-        HTML("<p style='color:red;'>Gewichtung = 1</p>
-              <p style='color:blue;'>ewichtung >= 0.8 and < 1</p>
-              <p style='color:green;'>Gewichtung >= 0.5 and < 0.8</p>
-              <p style='color:black;'>Gewichtung < 0.5</p>")
+        HTML("<p style='color:red;'>Weighting = 1</p>
+              <p style='color:blue;'>Weighting >= 0.8 and < 1</p>
+              <p style='color:green;'>Weighting >= 0.5 and < 0.8</p>
+              <p style='color:black;'>Weighting < 0.5</p>")
     })
 
     output$scatterPlot2 <- renderPlot({
@@ -385,9 +385,9 @@ server <- function(input, output, session) {
     })
 }
 
-shinyApp(ui = ui, server = server)
 
 
+# shinyApp(ui = ui, server = server)
 
 # Warning in regularize.values(x, y, ties, missing(ties), na.rm = na.rm) :collapsing to unique 'x' values
 # 输入的 x 值中有重复的数值，而这些函数通常要求 x 值是唯一的。在这种情况下，R会自动将这些重复的 x 值进行“折叠”，即取唯一值，并相应地处理 y 值。
@@ -797,3 +797,5 @@ w_sliding.reflim.plot <- function(x,covariate,verteilung = "truncated_gaussian",
     return(res)
 }
 
+
+shinyApp(ui = ui, server = server)

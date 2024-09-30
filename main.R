@@ -1,16 +1,3 @@
-# 数据量不足时的平滑处理：在某些区间内数据点较少的情况下，未加权的滑动窗口可能会给出不可靠的参考区间。加权滑动窗口能够将附近数据点的影响考虑进来，从而平滑结果，避免某些区间数据量不足导致的波动。
-# 边界效应：在窗口边界处，未加权的滑动窗口可能会受到边界数据稀疏或异常值的影响较大。加权处理可以减少这种边界效应，将更多的注意力放在中心数据点上，而对边界数据点的权重降低。
-# 连续性和稳定性：加权滑动窗口可以使得参考区间在随窗口移动时更加连续和平滑，减少剧烈波动，从而提供更稳定的参考区间。
-# 灵活性：通过调整权重函数的形状和参数，可以灵活控制不同数据点对参考区间计算的影响，从而适应不同的应用场景和数据分布特点。
-# 
-# 
-# 更新：09.01
-# 1. 增加了加权函数的灵活性，可以使用三种不同的分布函数
-# 2.确保尺度无关skalenunabhängig，加权函数的在分布的中心点标准化为1
-# 
-# 问题：
-
-
 # The main function doesn't work, please call the run function.
 main <- function() {
   # x <- reflimR::livertests$ALB[1:100]
@@ -71,14 +58,14 @@ main <- function() {
 #' 
 #' @param x [numeric]
 #' @param t [integer]
-#' @param a,b,c,d [numeric] Used to control the shape of the distribution function, taking values between 0 and 1
+#' @param a,b,c,d [numeric] Used to control the shape of the triangular and trapezoidal distribution function, taking values between 0 and 1
 #' 
 #' @example 
 #' run(x, t, verteilung = "truncated_gaussian")
 #' 
 #' @export
 
-run <- function(x, t, verteilung = "truncated_gaussian", standardabweichung = 5, a = NULL, b = NULL, c = NULL, d = NULL, window.size=NULL,step.width=NULL,lognormal=NULL,perc.trunc=2.5,n.min.window=200,n.min=100,apply.rounding=FALSE) {
+run <- function(x, t, verteilung = "truncated_gaussian", standardabweichung = 5, b = NULL, c = NULL, window.size=NULL,step.width=NULL,lognormal=NULL,perc.trunc=2.5,n.min.window=200,n.min=100,apply.rounding=FALSE) {
     par(mar = c(1,1,1,1))
     if (verteilung == "truncated_gaussian") {
         if (standardabweichung == 5) {
@@ -124,7 +111,6 @@ run <- function(x, t, verteilung = "truncated_gaussian", standardabweichung = 5,
 
 alist <- function(result.sliding.reflim,use.mean=T,xlim=NULL,ylim=NULL,xlab=NULL,ylab=NULL,col.low=c(0,0,1),col.upp=c(1,0,0),lwd=2,transparency=0.8,draw.cis=T,grid.col=NULL,log="",cut.at=1){
     
-    # 变量初始化
     rsr <- result.sliding.reflim
     
     cova <- rsr$covariate.mean  # 将mean作为协变量（x轴）
