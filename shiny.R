@@ -1,3 +1,4 @@
+# warning-fix
 setwd("D:\\project\\R\\Praxisprojekt")
 source("main.R")
 # source("D:/AppData/OneDrive - lelelelele/Studium/Bachelor/WiSe24-25/Praxisprojekt/code/main.R")
@@ -37,7 +38,7 @@ if (require("shinycssloaders")) {
 
 
 
-par(mar = c(1,1,1,1)) # Fix the problem of not being able to display pictures because the window is too small
+par(mar = c(3,3,3,3)) # Fix the problem of not being able to display pictures because the window is too small
 
 x <- reflimR::livertests$ALB
 t <- reflimR::livertests$Age

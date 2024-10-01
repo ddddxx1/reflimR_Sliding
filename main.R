@@ -1,3 +1,5 @@
+#warning- fix
+
 #' run
 #' 
 #' @description 
@@ -14,7 +16,7 @@
 #' @export
 
 run <- function(x, t, verteilung = "truncated_gaussian", standardabweichung = 5, b = NULL, c = NULL, window.size=NULL,step.width=NULL,lognormal=NULL,perc.trunc=2.5,n.min.window=200,n.min=100,apply.rounding=FALSE) {
-    par(mar = c(1,1,1,1))
+    par(mar = c(3,3,3,3))
     if (verteilung == "truncated_gaussian") {
         if (standardabweichung == 5) {
             res <- w_sliding.reflim(x, t,verteilung = verteilung, window.size = window.size, step.width = step.width, lognormal = lognormal)
@@ -58,7 +60,6 @@ run <- function(x, t, verteilung = "truncated_gaussian", standardabweichung = 5,
 #' @export
 
 alist <- function(result.sliding.reflim,use.mean=T,xlim=NULL,ylim=NULL,xlab=NULL,ylab=NULL,col.low=c(0,0,1),col.upp=c(1,0,0),lwd=2,transparency=0.8,draw.cis=T,grid.col=NULL,log="",cut.at=1){
-    
     rsr <- result.sliding.reflim
     
     cova <- rsr$covariate.mean
@@ -383,7 +384,6 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
         w_function <- makeWeightFunction("gaussian", sigma = standard_deviation)
         for (i in seq(min(covcomp), max(covcomp), length.out = n.steps)) {  # Generate an equally spaced sequence from the minimum to the maximum value of covcomp.
             www <- w_function(covcomp, mean = i)
-            
             res.reflim <- w_reflim(xx, www, n.min = n.min, apply.rounding = apply.rounding, lognormal = lognormal, plot.all = FALSE)
             
             lower.lim[i] <- res.reflim$limits[1]
@@ -405,7 +405,8 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
             plot(covcomp, www, type = "l", col = "blue", lwd = 2, main = paste("Gaussian Weight Function at i =", i))
             points(covcomp, www, col = "red")
             www_sum <- sum(www)
-            # text(x = mean(covcomp), y = mean(www),)
+            text(x = mean(covcomp), y = mean(www),
+                 labels = paste("sum of www=", round(www_sum,2)))
         }
     } else {
         if (!is.null(window.size) & !is.null(step.width)) {
@@ -679,6 +680,7 @@ w_reflim <- function (x, x_weight, lognormal = NULL, targets = NULL, perc.trunc 
     } else {
         plot.logtype <- FALSE
     }
+    
 
     res.lognorm <- w_lognorm(x_clean, ww_clean, plot.it = FALSE)
     res.trunc <- w_iboxplot(x_clean, ww_clean, lognormal = lognormal, perc.trunc = perc.trunc,
@@ -700,13 +702,14 @@ w_reflim <- function (x, x_weight, lognormal = NULL, targets = NULL, perc.trunc 
         result$remarks <- "Low n after truncation."
         n.min <- 40
     }
-    
+
     res.qq <- w_truncated_qqplot(res.trunc$trunc, res.trunc$w_trunc, lognormal = lognormal,
                                  perc.trunc = perc.trunc, n.min = n.min, apply.rounding = apply.rounding,
                                  plot.it = FALSE)$result
     res.ci <- conf_int95(n = n, lower.limit = as.numeric(res.qq[3]),
                          upper.limit = as.numeric(res.qq[4]), lognormal = lognormal,
                          apply.rounding = apply.rounding)
+
     if (res.qq[3] > 0) {
         res.pu <- permissible_uncertainty(lower.limit = as.numeric(res.qq[3]),
                                           upper.limit = as.numeric(res.qq[4]), apply.rounding = apply.rounding)
@@ -798,9 +801,8 @@ w_bowley <- function(x, x_weight) {
     install.packages("Hmisc")
     library(Hmisc)
   }
-  
   w_quantiles <- wtd.quantile(x, x_weight, probs = c(0.25, 0.5, 0.75))
-  return((w_quantiles[3] + w_quantiles[1] - 2* w_quantiles[2])/(w_quantiles[3]-w_quantiles[2]))
+  return((w_quantiles[3] + w_quantiles[1] - 2* w_quantiles[2])/(w_quantiles[3]-w_quantiles[2])) # ERROR: quan[3] = quan[2]
 }
 
 
