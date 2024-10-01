@@ -1,55 +1,3 @@
-# The main function doesn't work, please call the run function.
-main <- function() {
-  # x <- reflimR::livertests$ALB[1:100]
-  # t <- reflimR::livertests$Age[1:100]
-  # x <- abs(rnorm(400))
-  # w <- dnorm(x, mean = median(x), sd = sd(x)/2) # ? sapply(t, dnorm)
-  
-  x <- reflimR::livertests$ALB
-  t <- reflimR::livertests$Age
-  w <- dnorm(t, mean = median(t), sd = sd(t)/2)
-  run(x, t)
-  
-  csvdata <- data.frame(x = x, covariate = t)
-  write.csv(csvdata, "output-sliding.csv", row.names = FALSE)
-  
-  w <- dnorm(t, mean = median(t), sd = sd(t)/2)
-  
-  res <- w_sliding.reflim(x, t)
-  alist(result.sliding.reflim = res)
-  
-  sd = 10
-  if (sd == 5) {
-    res <- w_sliding.reflim(x, t)
-    alist(result.sliding.reflim = res)
-  } else {
-    res <- w_sliding.reflim(x, t)
-    res1 <- w_sliding.reflim(x, t, standard_deviation = sd)
-    # alist(res)
-    alist1(res, res1)
-  }
-  
-  
-  # dnorm 
-  # w_bowley(x, ww)
-  lognormal <- w_lognorm(x, w)$lognormal
-  res.ibox <- w_iboxplot(x, w, lognormal)
-  w_truncated_qqplot(res.ibox$trunc, res.ibox$w_trunc, lognormal = lognormal)
-  
-  is.nona <- !is.na(x) & !is.na(t) & !is.na(w)
-  xa <- x[is.nona]
-  t <- t[is.nona]
-  w <- w[is.nona]
-  
-  for (i in 1:length(x)) {
-      print(x[i])
-      print(t[i])
-      print(" ")
-  }
-  
-}
-
-
 #' run
 #' 
 #' @description 
@@ -113,12 +61,11 @@ alist <- function(result.sliding.reflim,use.mean=T,xlim=NULL,ylim=NULL,xlab=NULL
     
     rsr <- result.sliding.reflim
     
-    cova <- rsr$covariate.mean  # 将mean作为协变量（x轴）
+    cova <- rsr$covariate.mean
     if (!use.mean){
         cova <- rsr$covariate.mean
     }
     
-    # 确定y轴范围
     ylim.mod <- ylim
     if (is.null(ylim)){
         ylim.mod <- c(min(rsr$lower.lim),max(rsr$upper.lim))
@@ -131,7 +78,7 @@ alist <- function(result.sliding.reflim,use.mean=T,xlim=NULL,ylim=NULL,xlab=NULL
     }
     
     
-    # 绘制下限曲线
+    # Plotting the lower limit curve
     loli <- rsr$lower.lim
     if (log=="y" | log=="xy"){
         loli <- sapply(loli,cut.at.l,l=cut.at)
@@ -142,10 +89,10 @@ alist <- function(result.sliding.reflim,use.mean=T,xlim=NULL,ylim=NULL,xlab=NULL
         grid(col=grid.col)
     }
     
-    # 绘制上限曲线
+    # Plotting the upper limit curve
     points(cova,rsr$upper.lim,type="l",lwd=lwd,col=rgb(col.upp[1],col.upp[2],col.upp[3]))
     
-    # 绘制置信区间
+    # Plotting confidence intervals
     cilloli <- rsr$ci.lower.lim.l
     ciuloli <- rsr$ci.lower.lim.u
     if (log=="y" | log=="xy"){
@@ -197,7 +144,6 @@ alist1 <- function(result.sliding.reflim1, result.sliding.reflim2, use.mean=T, x
                   col.upp2=c(0,0,0), lwd=2, transparency=0.8, draw.cis=T, grid.col=NULL, log="", 
                   cut.at=1){
   
-  # 变量初始化
   rsr1 <- result.sliding.reflim1
   rsr2 <- result.sliding.reflim2
   
@@ -208,7 +154,6 @@ alist1 <- function(result.sliding.reflim1, result.sliding.reflim2, use.mean=T, x
     cova2 <- rsr2$covariate.mean
   }
   
-  # 确定y轴范围
   ylim.mod <- ylim
   if (is.null(ylim)){
     ylim.mod <- c(min(c(rsr1$lower.lim, rsr2$lower.lim)), max(c(rsr1$upper.lim, rsr2$upper.lim)))
@@ -220,7 +165,7 @@ alist1 <- function(result.sliding.reflim1, result.sliding.reflim2, use.mean=T, x
     }
   }
   
-  # 绘制rsr1下限曲线
+  # rsr1 lower limit curve
   loli1 <- rsr1$lower.lim
   if (log=="y" | log=="xy"){
     loli1 <- sapply(loli1, cut.at.l, l=cut.at)
@@ -228,26 +173,26 @@ alist1 <- function(result.sliding.reflim1, result.sliding.reflim2, use.mean=T, x
   plot(cova1, loli1, xlim=xlim, ylim=ylim.mod, type="l", lwd=lwd, col=rgb(col.low1[1], col.low1[2], col.low1[3]), 
        xlab=xlab, ylab=ylab, log=log)
   
-  # 绘制rsr1上限曲线
+  # rsr1 upper limit curve
   points(cova1, rsr1$upper.lim, type="l", lwd=lwd, col=rgb(col.upp1[1], col.upp1[2], col.upp1[3]))
   
-  # 绘制rsr2下限曲线
+  # rsr2 lower
   loli2 <- rsr2$lower.lim
   if (log=="y" | log=="xy"){
     loli2 <- sapply(loli2, cut.at.l, l=cut.at)
   }
   points(cova2, loli2, type="l", lwd=lwd, col=rgb(col.low2[1], col.low2[2], col.low2[3]))
   
-  # 绘制rsr2上限曲线
+  # rsr2 upper
   points(cova2, rsr2$upper.lim, type="l", lwd=lwd, col=rgb(col.upp2[1], col.upp2[2], col.upp2[3]))
   
   if (!is.null(grid.col)){
     grid(col=grid.col)
   }
   
-  # 绘制置信区间
+  # Plotting confidence intervals
   if (draw.cis){
-    # rsr1置信区间
+    # rsr1 confidence intervals
     cilloli1 <- rsr1$ci.lower.lim.l
     ciuloli1 <- rsr1$ci.lower.lim.u
     if (log=="y" | log=="xy"){
@@ -259,7 +204,7 @@ alist1 <- function(result.sliding.reflim1, result.sliding.reflim2, use.mean=T, x
     polygon(c(cova1, rev(cova1)), c(cilloli1, rev(ciuloli1)), col=collot1, border=collot1)
     polygon(c(cova1, rev(cova1)), c(rsr1$ci.upper.lim.l, rev(rsr1$ci.upper.lim.u)), col=colupt1, border=colupt1)
     
-    # rsr2置信区间
+    # rsr2 confidence intervals
     cilloli2 <- rsr2$ci.lower.lim.l
     ciuloli2 <- rsr2$ci.lower.lim.u
     if (log=="y" | log=="xy"){
@@ -290,12 +235,6 @@ alist1 <- function(result.sliding.reflim1, result.sliding.reflim2, use.mean=T, x
 #' @export
 
 dtriang <- function(x, a, b, c) {
-    # if (x < a || x > c) return(0)
-    # if (x <= b) {
-    #     return(2 * (x - a) / ((b - a) * (c - a)))
-    # } else {
-    #     return(2 * (c - x) / ((c - b) * (c - a)))
-    # }
     y <- ifelse(x < a | x > c, 0,
                 ifelse(x <= b, 2 * (x - a) / ((b - a) * (c - a)),
                        2 * (c - x) / ((c - b) * (c - a))))
@@ -319,14 +258,6 @@ dtriang <- function(x, a, b, c) {
 #' @export
 
 dtrapezoid <- function(x, a, b, c, d) {
-    # if (x < a || x > d) return(0)
-    # if (x <= b) {
-    #     return((x - a) / ((b - a) * (d - a)))
-    # } else if (x <= c) {
-    #     return(1 / (d - a))
-    # } else {
-    #     return((d - x) / ((d - c) * (d - a)))
-    # }
     y <- ifelse(x < a | x > d, 0,
                 ifelse(x <= b, (x - a) / ((b - a) * (d - a)),
                        ifelse(x <= c, 1 / (d - a),
@@ -352,7 +283,7 @@ makeWeightFunction <- function(distribution = "truncated_gaussian", ...) {
         if (is.null(sigma)) {
             sigma <- 5
         }
-        return(function(x, mean) { # mean将区间内x的中位数传入，不需要用户自己更改
+        return(function(x, mean) {
             dnorm(x, mean = mean, sd = sigma) / dnorm(mean, mean = mean, sd = sigma)
         })
     } else if (distribution == "gaussian") {
@@ -397,18 +328,10 @@ makeWeightFunction <- function(distribution = "truncated_gaussian", ...) {
 #' (truncated Gaussian, triangular, trapezoidal) to the covariate data. It is designed to handle missing values, 
 #' perform ordered computations, and calculate weighted reference limits for each windowed interval.
 #' 
-#' @return lower.lim 参考区间下限
-#'          upper.lim 参考区间上限
-#' 
 #' @export
 
 w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", standard_deviation = 5, a = NULL, b = NULL, c = NULL, d = NULL, window.size=NULL,step.width=NULL,lognormal=NULL,perc.trunc=2.5,n.min.window=200,n.min=100,apply.rounding=FALSE)
 {
-    # print("x")
-    # print(x)
-    # 
-    # print("t")
-    # print(covariate)
     print(paste("sd = ", standard_deviation))
     
     is.nona <- !is.na(x) & !is.na(covariate)
@@ -423,7 +346,7 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
     if(min(xx) <= 0){stop("(reflim) only positive values allowed.")}
     n <- length(xx)
     if(n < 39){stop(paste0("(iboxplot) n = ", n, ". The length of x should be 200 or more. The absolute minimum for reference limit estimation is 39."))}
-    if(n < n.min){  # 判断点数
+    if(n < n.min){  # Determine enough points
         print(noquote(paste("n =", n, "where a minimum of", n.min, "is required. You may try to reduce n.min at the loss of accuracy.")))
         return(c(mean = NA, sd = NA, lower.lim = NA, upper.lim = NA))
     }
@@ -454,13 +377,11 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
     
     sum.www <- rep(NA, n.steps)
     
-    # print("xx")
-    # print(xx)
     
     if (verteilung == "gaussian") {
         print("gaussian")
         w_function <- makeWeightFunction("gaussian", sigma = standard_deviation)
-        for (i in seq(min(covcomp), max(covcomp), length.out = n.steps)) {  # 生成从 covcomp 的最小值到最大值之间的一个等间距序列
+        for (i in seq(min(covcomp), max(covcomp), length.out = n.steps)) {  # Generate an equally spaced sequence from the minimum to the maximum value of covcomp.
             www <- w_function(covcomp, mean = i)
             
             res.reflim <- w_reflim(xx, www, n.min = n.min, apply.rounding = apply.rounding, lognormal = lognormal, plot.all = FALSE)
@@ -475,12 +396,11 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
             
             distribution.type[i] <- ifelse(names(res.reflim)[1] == "mean", "normal", "lognormal")
             
-            covariate.left[i] <- min(covcomp)  # 因为不需要区间，所以用最小值
-            covariate.right[i] <- max(covcomp)  # 同样，用最大值
-            # covariate.mean[i] <- mean(covcomp)
-            covariate.mean[i] <- covcomp[which.max(www)]    # 用mean参数来记录权值最大点
+            covariate.left[i] <- min(covcomp)
+            covariate.right[i] <- max(covcomp)
+            covariate.mean[i] <- covcomp[which.max(www)]    # Use the mean parameter to record the point where the weights are maximal
             covariate.median[i] <- median(covcomp)
-            covariate.n[i] <- length(covcomp)  # 统计所有协变量的数量
+            covariate.n[i] <- length(covcomp)  # Count of all covariates
             
             plot(covcomp, www, type = "l", col = "blue", lwd = 2, main = paste("Gaussian Weight Function at i =", i))
             points(covcomp, www, col = "red")
@@ -493,62 +413,29 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
             window.left <- covcomp[1]
             window.right <- window.left + window.size
             for (i in 1:n.steps) {
-                # print(window.left)
-                # print(window.right)
-                # print(covcomp)
                 is.in.interval <- covcomp >= window.left & covcomp <= window.right
                 if (sum(is.in.interval) >= n.min) {
                     
                     interval_cov <- covcomp[is.in.interval]
                     
                     xxx <- xx[is.in.interval]
-                    # www <- ww[is.in.interval]
-                    # www <- dnorm(interval_cov, mean = median(interval_cov), sd = standard_deviation)
-                    
-                    # gaussian <- makeGaussian(standard_deviation)
-                    # www <- gaussian(interval_cov, mean = median(interval_cov))
-                    
                     
                     if (verteilung == "truncated_gaussian") {
                         w_function <- makeWeightFunction(verteilung, sigma = standard_deviation)
                         # www <- w_function(interval_cov, mean = median(interval_cov))
                         www <- w_function(interval_cov, mean = (min(interval_cov) + max(interval_cov)) / 2)
                     } else if (verteilung == "triangular") {
-                        # a <- if (is.null(a)) 0 else a
-                        # b <- if (is.null(b)) 0.5 else b
-                        # c <- if (is.null(c)) 1 else c
-                        # 
-                        # a.value <- quantile(interval_cov, a)
-                        # b.value <- quantile(interval_cov, b)
-                        # c.value <- quantile(interval_cov, c)
-                        
+ 
                         b <- if (is.null(b)) 0.5 else b
                         
                         a.value <- min(interval_cov)
                         c.value <- max(interval_cov)
                         b.value <- (c.value - a.value) * b + a.value
-                        
-                        # print(paste("a.value =", a.value))
-                        # print(paste("b.value =", b.value))
-                        # print(paste("c.value =", c.value))
-                        # print("---")
-                        
-                        # a.value <- min(interval_cov)
-                        # b.value <- median(interval_cov)
-                        # c.value <- max(interval_cov)
-                        w_function <- makeWeightFunction(verteilung, a = a.value, b = b.value, c = c.value)  # 这里需要分布函数参数
+
+                        w_function <- makeWeightFunction(verteilung, a = a.value, b = b.value, c = c.value)
                         www <- w_function(interval_cov)
                     } else if (verteilung == "trapezoidal") {
-                        # a <- if (is.null(a)) 0 else a
-                        # b <- if (is.null(b)) 0.25 else b
-                        # c <- if (is.null(c)) 0.75 else c
-                        # d <- if (is.null(d)) 1 else d
-                        # 
-                        # a.value <- quantile(interval_cov, a)
-                        # b.value <- quantile(interval_cov, b)
-                        # c.value <- quantile(interval_cov, c)
-                        # d.value <- quantile(interval_cov, d)
-                        
+
                         b <- if (is.null(b)) 0.3 else b
                         c <- if (is.null(c)) 0.6 else c
                         
@@ -556,12 +443,7 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
                         d.value <- max(interval_cov)
                         b.value <- (d.value - a.value) * b + a.value
                         c.value <- (d.value - a.value) * c + a.value
-                        
-                        # a.value <- min(interval_cov)
-                        # b.value <- quantile(interval_cov, 0.25) 
-                        # c.value <- quantile(interval_cov, 0.75)
-                        # d.value <- max(interval_cov)     
-                        
+
                         w_function <- makeWeightFunction(distribution = verteilung, a = a.value, b = b.value, c = c.value, d = d.value)
                         www <- w_function(interval_cov)
                     }
@@ -576,7 +458,6 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
                     
                     
                     
-                    if (sum.www[i] > 100 || TRUE) {
                         res.reflim <- w_reflim(xxx, www, n.min = n.min, apply.rounding = apply.rounding, lognormal = lognormal, plot.all = FALSE)
                         
                         
@@ -600,7 +481,6 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
                         covariate.mean[i] <- mean(covals)
                         covariate.median[i] <- median(covals)
                         covariate.n[i] <- sum(is.in.interval)
-                    }
                     
                 } else {
                     covariate.left[i] <- window.left
@@ -619,33 +499,15 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
                 is.in.interval <- covcomp >= cov.unique[indl] & covcomp < cov.unique[indr]
                 
                 if (sum(is.in.interval) >= n.min.window) {
-                    
-                    # print(covcomp[is.in.interval])
+
                     interval_cov <- covcomp[is.in.interval]
                     
                     xxx <- xx[is.in.interval]
-                    # www <- ww[is.in.interval]
-                    # www <- dnorm(interval_cov, mean = median(interval_cov), sd = standard_deviation)
-                    
-                    # gaussian <- makeGaussian(standard_deviation)
-                    # www <- gaussian(interval_cov, mean = median(interval_cov))
-                    
-                    
-                    if (verteilung == "truncated_gaussian") {  # todo
-                        # print(xxx)
-                        # print(any(duplicated(xxx)))
+
+                    if (verteilung == "truncated_gaussian") {
                         w_function <- makeWeightFunction(verteilung, sigma = standard_deviation)
-                        # www <- w_function(interval_cov, mean = median(interval_cov))
                         www <- w_function(interval_cov, mean = (min(interval_cov) + max(interval_cov)) / 2)
                     } else if (verteilung == "triangular") {
-                        # a <- if (is.null(a)) 0 else a
-                        # b <- if (is.null(b)) 0.5 else b
-                        # c <- if (is.null(c)) 1 else c
-                        # 
-                        # a.value <- quantile(interval_cov, a)
-                        # b.value <- quantile(interval_cov, b)
-                        # c.value <- quantile(interval_cov, c)
-                        
                         b <- if (is.null(b)) 0.5 else b
                         
                         a.value <- min(interval_cov)
@@ -655,16 +517,6 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
                         w_function <- makeWeightFunction(verteilung, a = a.value, b = b.value, c = c.value)
                         www <- w_function(interval_cov)
                     } else if (verteilung == "trapezoidal") {
-                        # a <- if (is.null(a)) 0 else a
-                        # b <- if (is.null(b)) 0.25 else b
-                        # c <- if (is.null(c)) 0.75 else c
-                        # d <- if (is.null(d)) 1 else d
-                        # 
-                        # a.value <- quantile(interval_cov, a)
-                        # b.value <- quantile(interval_cov, b)
-                        # c.value <- quantile(interval_cov, c)
-                        # d.value <- quantile(interval_cov, d)
-                        
                         b <- if (is.null(b)) 0.3 else b
                         c <- if (is.null(c)) 0.6 else c
                         
@@ -677,9 +529,6 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
                         www <- w_function(interval_cov)
                     }
                     
-                    # www <- w_function(interval_cov, mean = median(interval_cov))
-                    
-                    
                     plot(interval_cov, www, type = "l", col = "blue", lwd = 2, main = "www VS interval_cov")
                     points(interval_cov, www, col = "red")
                     www_sum <- sum(www)
@@ -687,14 +536,8 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
                          labels = paste("Sum of www =", round(www_sum, 2)),
                          col = "darkgreen", cex = 1.5, font = 2)
                     sum.www[ind] <- www_sum
-                    
-                    # while(sum.www[ind] < 7) {
-                    #     indr <- indr + 1
-                    # }
-                    
-                    if (sum.www[ind] > 100 || TRUE) {
+
                         res.reflim <- w_reflim(xxx, www, n.min = n.min, apply.rounding = apply.rounding, lognormal = lognormal, plot.all = FALSE)
-                        # print(res.reflim)
                         
                         lower.lim[ind] <- res.reflim$limits[1]
                         upper.lim[ind] <- res.reflim$limits[2]
@@ -719,9 +562,6 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
                         indl <- indl + 1
                         indr <- indr + 1
                         ind <- ind + 1
-                    } else {
-                        indr <- indr + 1
-                    }
                     
                 } else {
                     indr <- indr + 1
@@ -730,22 +570,8 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
         }
     }
     
-    # print(length(lower.lim))
-    # print(length(upper.lim))
-    # print(length(ci.lower.lim.l))
-    # print(length(ci.lower.lim.u))
-    # print(length(ci.upper.lim.l))
-    # print(length(ci.upper.lim.u))
-    # print(length(distribution.type))
-    # print(length(covariate.left))
-    # print(length(covariate.right))
-    # print(length(covariate.mean))
-    # print(length(covariate.median))
-    # print(length(covariate.n))
-    # print(length(sum.www))
-    
     res <- data.frame(lower.lim,upper.lim,ci.lower.lim.l,ci.lower.lim.u,ci.upper.lim.l,ci.upper.lim.u,distribution.type,covariate.left,covariate.right,covariate.mean,covariate.median,covariate.n,sum.www)
-    # 去除数据框中含有 NA 的行
+    # Remove rows containing NA
     res <- res[!is.na(covariate.n) & !is.na(lower.lim),]    # todo 删掉附加条件再次尝试
     # res <- res[!is.na(covariate.n),]
     return(res)
@@ -755,9 +581,11 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
 #' w_reflim
 #' 
 #' @description 
-#' 使用qq图方法，计算上下限
+#' Using the qq chart method, calculate the upper and lower limits
+#' 
+#' @export
 
-# targets提供目标上下限
+# targets: upper and lower limits of the target
 w_reflim <- function (x, x_weight, lognormal = NULL, targets = NULL, perc.trunc = 2.5,
              n.min = 200, apply.rounding = TRUE, plot.it = FALSE, plot.all = FALSE, 
              print.n = TRUE, main = "reference limits", xlab = "x") 
@@ -847,18 +675,14 @@ w_reflim <- function (x, x_weight, lognormal = NULL, targets = NULL, perc.trunc 
     digits <- adjust_digits(median(x_clean))$digits
     if (is.null(lognormal)) {
         plot.logtype <- TRUE
-        lognormal <- w_lognorm(x_clean, ww_clean)$lognormal  # warning
+        lognormal <- w_lognorm(x_clean, ww_clean)$lognormal
     } else {
         plot.logtype <- FALSE
     }
-    # Error zeigen
-    # print(paste("is x == x_clean ?", all(x, x_clean)))
 
     res.lognorm <- w_lognorm(x_clean, ww_clean, plot.it = FALSE)
     res.trunc <- w_iboxplot(x_clean, ww_clean, lognormal = lognormal, perc.trunc = perc.trunc,
                             apply.rounding = apply.rounding, plot.it = FALSE)
-    # Error zeigen
-    # print(res.trunc$progress)
     
     n.trunc <- length(res.trunc$trunc)
     if (n.trunc < 40) {
@@ -904,7 +728,7 @@ w_reflim <- function (x, x_weight, lognormal = NULL, targets = NULL, perc.trunc 
     dev.lim <- c(lower.limit = NA, upper.limit = NA)
     
     if (!is.null(targets)) {
-        ip <- interpretation(res.lim[1:2], targets) # 检查给定的限制值和目标值是否在容许的不确定性范围内
+        ip <- interpretation(res.lim[1:2], targets) # Check that the given limit and target values are within the permissible uncertainty range
         res.tar[1:2] <- targets
         res.tar[3:6] <- ip$tol.tar
         if (apply.rounding) {
@@ -989,7 +813,7 @@ w_IQR <- function(x, x_weight) {
 #' w_lognorm
 #' 
 #' @description 
-#' 计算是否应该使用lognorm或者norm
+#' Calculate whether lognorm or norm should be used
 #' 
 #' @export
 
@@ -1005,10 +829,10 @@ w_lognorm <- function(x, x_weight, cutoff = 0.05, digits = 3, plot.it = FALSE, x
     stop("Negative values not allowed.")
   }
     bs <- rep(NA, 2)
-    bs[1] <- w_bowley(x, x_weight)  # warning
-    bs[2] <- w_bowley(log(x), x_weight) # warning
+    bs[1] <- w_bowley(x, x_weight)
+    bs[2] <- w_bowley(log(x), x_weight)
   
-  # delta kann bestimmen, ob die logarithmische Transformation die Schiefe der Daten erheblich verringert
+  # delta can determine whether the logarithmic transformation significantly reduces the skewness of the data
   if (bs[1] < 0) {
     lognormal <- FALSE
   } else {
@@ -1023,21 +847,14 @@ w_lognorm <- function(x, x_weight, cutoff = 0.05, digits = 3, plot.it = FALSE, x
     df.x <- data.frame(lin = xx, log = log(xx))
     df.quant <- cbind(lin = wtd.quantile(df.x[, 1], x_weight, c(0.1, 0.5)),
                       log = wtd.quantile(df.x[, 2], x_weight, c(0.1, 0.5)))
-    # print(df.quant)
     
-    # Berechnen die Steigung und den Achsenabschnitt der linearen Transformation,
-    # damit die logarithmisch transformierten Daten mit den ursprünglichen Daten in 
-    # Übereinstimmung gebracht werden können.
-    
-    # 斜率 
     slope <- (df.quant[2, 1] - df.quant[1, 1])/(df.quant[2, 
                                                          2] - df.quant[1, 2])
-    # 截距
+
     intercept <- df.quant[1, 1] - slope * df.quant[1, 2]
     df.x <- cbind(df.x, transformed = intercept + slope * df.x[, 2])
-    # print(df.x)
     
-    # 绘制概率密度函数 Wahrscheinlichkeitsdichte
+    # Plotting probability density functions
     d1 <- density(df.x[, 1])
     d2 <- density(df.x[, 3])
     ymax <- max(max(d1$y), max(d2$y)) * 1.4
@@ -1082,7 +899,7 @@ w_lognorm <- function(x, x_weight, cutoff = 0.05, digits = 3, plot.it = FALSE, x
 #' w_iboxplot
 #' 
 #' @description 
-#' 箱线图法进行迭代截断，以获取中心95%的可能不显著结果
+#' The box plot method is used for iterative truncation to obtain the central 95% of potentially non-significant results.
 #' 
 #' @export
 
@@ -1135,14 +952,12 @@ w_iboxplot <- function(x, x_weight, lognormal = NULL, perc.trunc = 2.5,
     qf <- ifelse(i == 1, qf <- qnorm(q.trunc) / qnorm(0.25),
                  qf <- qnorm(q.trunc) / qnorm(0.25 * (1 - q.trunc / 50)
                                               + q.trunc))
-    # ?
     Q <- wtd.quantile(x, x_weight, c(0.25, 0.5, 0.75))
     var1 <- Q[2] - Q[1]
     var2 <- Q[3] - Q[2]
     var <- min(var1, var2)
     lim <- c(Q[2] - qf * var, Q[2] + qf * var)
     indices <- which(x >= lim[1] & x <= lim[2])
-    # return(subset(x, x >= lim[1] & x <= lim[2]))
     return(list(x = x[indices], x_weight = x_weight[indices]))
   }
   print.progress <- function(x, x_weight, lognormal = FALSE) {
@@ -1178,15 +993,15 @@ w_iboxplot <- function(x, x_weight, lognormal = NULL, perc.trunc = 2.5,
 
   if (plot.it) {
 
-    # 选择需要绘制的数据范围
+    # Select the range of data to be plotted
     # x1 <- x[x < median(x) + 8 * w_IQR(x, x_weight)]
     x1 <- x[x < median(x) + 8 * IQR(x)]
-    # 计算加权密度估计
+    # Calculate weighted density estimates
     d0 <- density(x1)
-    # 确定绘图数据的范围
+    # Determine the scope of the mapping data
     d1 <- data.frame(d0$x, d0$y)
     d <- subset(d1, d1[, 1] >= lim[1] & d1[, 1] <= lim[2])
-    # 根据数据量选择合适的直方图断点
+    # Choosing the right histogram breakpoints based on the amount of data
     if (n < 200) {
       breaks <- "Sturges"
     } else {
@@ -1194,17 +1009,17 @@ w_iboxplot <- function(x, x_weight, lognormal = NULL, perc.trunc = 2.5,
       breaks <- seq(from = min(x1) - 0.1 * delta, to = max(x1) + 0.1 * delta,
                     by = (lim[2] - lim[1]) / 10)
     }
-    # 绘制加权直方图
+    # Plotting weighted histograms
     hist(x1, freq = FALSE, breaks = breaks, yaxt = "n", ylim = c(0, max(d[, 2]) * 1.5),
          main = main, xlab = xlab, ylab = "", col = "white", border = "grey")
-    # 绘制加权密度曲线
-    lines(d[, 1], d[, 2], col = "blue", lwd = 2)  # 曲线
-    lines(rep(lim[1], 2), c(0, d[1, 2]), col = "blue", lwd = 2) # 左边界
-    lines(rep(lim[2], 2), c(0, d[nrow(d), 2]), col = "blue", lwd = 2)  # 右边界
-    # 添加文本标签
+    # Plotting weighted density curves
+    lines(d[, 1], d[, 2], col = "blue", lwd = 2)
+    lines(rep(lim[1], 2), c(0, d[1, 2]), col = "blue", lwd = 2) # left border
+    lines(rep(lim[2], 2), c(0, d[nrow(d), 2]), col = "blue", lwd = 2)  # right border
+    # Adding text labels
     text(lim[1], 0, round(lim[1], digits), pos = 3)
     text(lim[2], 0, round(lim[2], digits), pos = 3)
-    # 绘制加权箱线图
+    # Plotting a weighted box plot
     boxplot(x1, at = max(d[, 2]) * 1.4, boxwex = max(d[, 2]) / 10, col = "white", pch = 20,
             horizontal = TRUE, add = TRUE)
     boxplot(x_clean, at = max(d[, 2]) * 1.25, boxwex = max(d[, 2]) / 10, col = "blue", pch = 20,
@@ -1222,7 +1037,7 @@ w_iboxplot <- function(x, x_weight, lognormal = NULL, perc.trunc = 2.5,
 #' w_truncated_qqplot
 #' 
 #' @description 
-#' qq图用于验证正态性，以及比较任意两种分布
+#' qq plots are used to verify normality and to compare any two distributions
 #' 
 #' @export
 
@@ -1266,7 +1081,7 @@ w_truncated_qqplot <- function(x, x_weight, lognormal = NULL, perc.trunc = 2.5, 
     return(list(result = NULL, lognormal = NULL))
   }
   
-  # 设定要计算的分位点数为100或n个
+
   n.quantiles <- 100
   if (n < n.quantiles) {
     n.quantiles <- n
@@ -1281,12 +1096,12 @@ w_truncated_qqplot <- function(x, x_weight, lognormal = NULL, perc.trunc = 2.5, 
   p1 <- seq(from = perc.trunc/100, to = 1 - perc.trunc/100,
             length.out = n.quantiles)
   p2 <- seq(from = 0, to = 1, length.out = n.quantiles)
-  x.ax <- qnorm(p1) # 理论分位数 theoretical quantiles
-  y.ax <- wtd.quantile(x_clean, ww_clean, p2) # 样本分位数 sample quantiles
+  x.ax <- qnorm(p1) # theoretical quantiles
+  y.ax <- wtd.quantile(x_clean, ww_clean, p2) #  sample quantiles
   central.part <- floor(0.05 * n.quantiles) : ceiling(0.95 * n.quantiles)
   reg <- lm(y.ax[central.part] ~ x.ax[central.part])
-  a <- reg$coefficients[2]  # 线性回归计算斜率 Regression Steigung slope
-  b <- reg$coefficients[1]  # 截距 Achsenabschnitt intercept
+  a <- reg$coefficients[2]  # Regression Steigung slope
+  b <- reg$coefficients[1]  #  Achsenabschnitt intercept
   
   result <- c(b, a, b - 1.96 * a, b + 1.96 * a)
   result <- setNames(result, c("mean", "sd", "lower.lim", "upper.lim"))
@@ -1294,7 +1109,7 @@ w_truncated_qqplot <- function(x, x_weight, lognormal = NULL, perc.trunc = 2.5, 
   if (lognormal) {
     names(result)[1:2] <- paste0(names(result)[1:2], "log") # meanlog  sdlog
     result[1:2] <- round(result[1:2], 3)
-    result[3:4] <- exp(result[3:4]) # e的次方
+    result[3:4] <- exp(result[3:4]) 
   }
   if (result[3] < 0) {
       result[3] <- 0
