@@ -1,4 +1,3 @@
-# warning-fix
 setwd("D:\\project\\R\\Praxisprojekt")
 source("main.R")
 # source("D:/AppData/OneDrive - lelelelele/Studium/Bachelor/WiSe24-25/Praxisprojekt/code/main.R")
