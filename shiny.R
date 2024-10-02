@@ -1,3 +1,4 @@
+# warning-fix
 setwd("D:\\project\\R\\Praxisprojekt")
 source("main.R")
 # source("D:/AppData/OneDrive - lelelelele/Studium/Bachelor/WiSe24-25/Praxisprojekt/code/main.R")
@@ -37,7 +38,7 @@ if (require("shinycssloaders")) {
 
 
 
-par(mar = c(1,1,1,1)) # Fix the problem of not being able to display pictures because the window is too small
+par(mar = c(3,3,3,3)) # Fix the problem of not being able to display pictures because the window is too small
 
 x <- reflimR::livertests$ALB
 t <- reflimR::livertests$Age
@@ -433,15 +434,18 @@ w_sliding.reflim.plot <- function(x,covariate,verteilung = "truncated_gaussian",
     if (verteilung == "gaussian") {
         print("gaussian")
         w_function <- makeWeightFunction("gaussian", sigma = standard_deviation)
+        step_index <- 1
         for (i in seq(min(covcomp), max(covcomp), length.out = n.steps)) {  # Generate an equally spaced sequence from the minimum to the maximum value of covcomp.
             www <- w_function(covcomp, mean = i)
 
             res.reflim <- w_reflim(xx, www, n.min = n.min, apply.rounding = apply.rounding, lognormal = lognormal, plot.all = TRUE)
             loop <- loop + 1
 
-            x.interval[[i]] <- xx
-            t.interval[[i]] <- covcomp
-            w.interval[[i]] <- www
+            x.interval[[step_index]] <- xx
+            t.interval[[step_index]] <- covcomp
+            w.interval[[step_index]] <- www
+            
+            step_index <- step_index + 1
         }
     } else {
         if (!is.null(window.size) & !is.null(step.width)) {
@@ -565,7 +569,7 @@ w_sliding.reflim.plot <- function(x,covariate,verteilung = "truncated_gaussian",
 
     
     
-    print(paste("Schleifenzeiten = ", loop))
+    print(paste("Number of loops = ", loop))
     res <- data.frame()
     
     last_was_separetor <- TRUE
