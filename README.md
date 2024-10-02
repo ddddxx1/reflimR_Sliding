@@ -28,5 +28,5 @@ The application will automatically download and call the required libraries.
 Users can run the shiny app directly, which provides a user interface for the user. The user can intuitively select the distribution function or modify the parameters in the programme. shiny will show the user the weight distribution at each step and the final reference limit line graph.
 Alternatively, you can call the run function in main.R, which integrates all the functions and automatically calculates the reference limit line graph.
 
-## Licence
-This project is licensed under the MIT License.
+## License
+This project is licensed under the GPL 3.0 License. You can freely use, modify, and distribute this software, provided that you adhere to the terms of the license.
