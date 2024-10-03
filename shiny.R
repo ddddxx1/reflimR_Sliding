@@ -1,3 +1,4 @@
+#shiny-improvement
 setwd("D:\\project\\R\\Praxisprojekt")
 source("main.R")
 # source("D:/AppData/OneDrive - lelelelele/Studium/Bachelor/WiSe24-25/Praxisprojekt/code/main.R")
@@ -116,11 +117,19 @@ ui <- fluidPage(
         ),
 
         mainPanel(
-            fluidRow(
-                column(12, plotOutput("scatterPlot"), uiOutput("textBelowPlot")),
-                column(12, withSpinner(plotOutput("scatterPlot2")))
-            ),
-            textOutput("errorMessage")
+            tabsetPanel(
+                tabPanel("Dataset Scatter Plot",
+                         fluidRow(
+                             column(12, plotOutput("uploadedScatterPlot"))
+                        )
+                ),
+                tabPanel("Result",
+                         fluidRow(
+                             column(12, plotOutput("scatterPlot"), uiOutput("textBelowPlot")),
+                             column(12, withSpinner(plotOutput("scatterPlot2")))
+                         )
+                )
+            )
         )
     )
 )
@@ -176,13 +185,13 @@ server <- function(input, output, session) {
         }
 
         standardabweichung <- input$standardabweichung
-        a <- input$a
+        # a <- input$a
         b <- input$b
-        c <- input$c
-        a_trap <- input$a_trap
+        # c <- input$c
+        # a_trap <- input$a_trap
         b_trap <- input$b_trap
         c_trap <- input$c_trap
-        d_trap <- input$d_trap
+        # d_trap <- input$d_trap
         
         
 
@@ -248,13 +257,13 @@ server <- function(input, output, session) {
         }
         
         standardabweichung <- input$standardabweichung
-        a <- input$a
+        # a <- input$a
         b <- input$b
-        c <- input$c
-        a_trap <- input$a_trap
+        # c <- input$c
+        # a_trap <- input$a_trap
         b_trap <- input$b_trap
         c_trap <- input$c_trap
-        d_trap <- input$d_trap
+        # d_trap <- input$d_trap
 
         result <- tryCatch({
             if (input$verteilung == "truncated_gaussian") {
@@ -293,6 +302,20 @@ server <- function(input, output, session) {
           return(paste("Error:", data_info$error))
         }
         return(NULL)
+    })
+    
+    output$uploadedScatterPlot <- renderPlot({
+        user_data <- reactive_data()
+        if (is.null(user_data)) {
+            return(NULL)
+        }
+        
+        plot(user_data$t, user_data$x,
+             xlab = input$tcol, 
+             ylab = input$xcol, 
+             main = "Scatter Plot of Uploaded Data",
+             pch = 16, 
+             col = "darkblue")
     })
 
     output$scatterPlot <- renderPlot({
