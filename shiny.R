@@ -56,7 +56,8 @@ ui <- fluidPage(
                                     "Trapezoidal" = "trapezoidal"),
                         selected = "truncated_gaussian"),
             fileInput("datafile", "Upload CSV File", accept = c("text/csv", "text/comma-separated-values,text/plain", ".csv")),
-
+            actionButton('reset', 'Reset Input', icon = icon("trash")),
+            
             selectInput("xcol", "Select X Column", choices = NULL),
             selectInput("tcol", "Select T Column", choices = NULL),
 
@@ -136,6 +137,26 @@ ui <- fluidPage(
 
 
 server <- function(input, output, session) {
+    values <- reactiveValues(upload_state = NULL)
+    
+    observeEvent(input$datafile, {
+        values$upload_state <- 'uploaded'
+    })
+    
+    observeEvent(input$reset, {
+        values$upload_state <- 'reset'
+    })
+    
+    dataset_input <- reactive({
+        if (is.null(values$upload_state)) {
+            return(list(x = x, t = t))
+        } else if (values$upload_state == 'uploaded') {
+            return(read.csv(input$datafile$datapath))
+        } else if (values$upload_state == 'reset') {
+            return(list(x = x, t = t))
+        }
+    })
+    
     uploaded_data <- reactive({
       if (is.null(input$datafile)) {
         return(NULL)
@@ -146,7 +167,8 @@ server <- function(input, output, session) {
     })
 
     observe({
-      file_data <- uploaded_data()
+      # file_data <- uploaded_data()
+      file_data <- dataset_input()
 
       if (!is.null(file_data)) {
         col_names <- names(file_data)
@@ -156,7 +178,8 @@ server <- function(input, output, session) {
     })
 
     reactive_data <- reactive({
-      file_data <- uploaded_data()
+      # file_data <- uploaded_data()
+      file_data <- dataset_input()
 
       if (is.null(file_data)) {
         return(list(x = x, t = t))  # If not uploaded, use standard x/t
