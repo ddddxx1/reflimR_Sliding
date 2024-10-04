@@ -126,7 +126,7 @@ ui <- fluidPage(
                 ),
                 tabPanel("Result",
                          fluidRow(
-                             column(12, plotOutput("scatterPlot"), uiOutput("textBelowPlot")),
+                             column(12, plotOutput("scatterPlot")),
                              column(12, withSpinner(plotOutput("scatterPlot2")))
                          )
                 )
@@ -343,38 +343,33 @@ server <- function(input, output, session) {
 
     output$scatterPlot <- renderPlot({
         data_info <- data()
-
+        
         if (!is.null(data_info$error)) {
             return(NULL)
         }
-
+        
         res <- data_info$res
         segment_indices <- data_info$segment_indices
         segment_count <- data_info$segment_count
-
-        # Get the currently selected segment index
+        
         segment_index <- input$segment
 
-        # Get the start and end positions of the current segment
         if (segment_index == 1) {
             start_row <- 1
         } else {
             start_row <- segment_indices[segment_index - 1] + 2
         }
         end_row <- segment_indices[segment_index]
-
-        # Extract the data of the segment
+        
         segment_data <- res[start_row:end_row, ]
-
-        # color
         w_values <- as.numeric(segment_data$w)
-        color_palette <- colorRampPalette(c("white", "black"))(100)
-        w_colors <- color_palette[cut(w_values, breaks = 100)]
+        
+        # Creating a continuous color gradient with colorRampPalette()
+        color_palette <- colorRampPalette(c("blue", "red"))(100)
+        w_colors <- color_palette[cut(w_values, breaks = 100, labels = FALSE)]
 
-        w_colors[w_values == 1] <- "red"
-        w_colors[w_values >= 0.8 & w_values < 1] <- "blue"
-        w_colors[w_values >= 0.5 & w_values < 0.8] <- "green"
-
+        par(mar = c(3, 3, 3, 8))
+        
         plot(as.numeric(segment_data$t),
              as.numeric(segment_data$x),
              xlab = "t",
@@ -382,26 +377,35 @@ server <- function(input, output, session) {
              main = paste("Scatter Plot for Segment", segment_index, "with Distribution:", input$verteilung),
              pch = 16,
              col = w_colors)
+        
+        legend("topright", 
+               inset = c(-0.2, 0), 
+               legend = c("w = 1", "w = 0.8", "w = 0.5"), 
+               col = color_palette[c(100, 80, 50)],  
+               pch = 16,       
+               title = "Weighting",     
+               xpd = TRUE)                                 
     })
     
-    output$textBelowPlot <- renderUI({
-        HTML("<p style='color:red;'>Weighting = 1</p>
-              <p style='color:blue;'>Weighting >= 0.8 and < 1</p>
-              <p style='color:green;'>Weighting >= 0.5 and < 0.8</p>
-              <p style='color:black;'>Weighting < 0.5</p>")
-    })
+    
+    # output$textBelowPlot <- renderUI({
+    #     HTML("<p style='color:red;'>Weighting = 1</p>
+    #           <p style='color:blue;'>Weighting >= 0.8 and < 1</p>
+    #           <p style='color:green;'>Weighting >= 0.5 and < 0.8</p>
+    #           <p style='color:black;'>Weighting < 0.5</p>")
+    # })
 
     output$scatterPlot2 <- renderPlot({
-        data_info1 <- plot_data()
+        alistplot <- plot_data()
 
-        if (is.null(data_info1)) {
+        if (is.null(alistplot)) {
             return(NULL)
         }
-        res <- data_info1
+        res <- alistplot
 
-        plot(res$t, res$x, xlab = "t", ylab = "x",
-             main = paste("Scatter"),
-             pch = 16, col = "blue")
+        # plot(res$t, res$x, xlab = "t", ylab = "x",
+        #      main = paste("Scatter"),
+        #      pch = 16, col = "blue")
     })
 }
 

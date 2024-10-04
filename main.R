@@ -78,6 +78,8 @@ alist <- function(result.sliding.reflim,use.mean=T,xlim=NULL,ylim=NULL,xlab=NULL
         }
     }
     
+    par(mar = c(3, 3, 3, 8))
+    
     
     # Plotting the lower limit curve
     loli <- rsr$lower.lim
@@ -109,9 +111,16 @@ alist <- function(result.sliding.reflim,use.mean=T,xlim=NULL,ylim=NULL,xlab=NULL
         polygon(c(cova,rev(cova)),c(rsr$ci.upper.lim.l,rev(rsr$ci.upper.lim.u)),col=colupt,border=colupt)
     }
     
+    legend("topright",
+           inset = c(-0.2, 0), 
+           legend = c("Upper Limit", "Lower Limit"), 
+           col = c(rgb(col.upp[1], col.upp[2], col.upp[3]), rgb(col.low[1], col.low[2], col.low[3])), 
+           lwd = lwd, 
+           title = "Limits", 
+           xpd = TRUE)
+    
     
 }
-
 
 
 
@@ -166,6 +175,8 @@ alist1 <- function(result.sliding.reflim1, result.sliding.reflim2, use.mean=T, x
     }
   }
   
+  par(mar = c(3,3,3,8))
+  
   # rsr1 lower limit curve
   loli1 <- rsr1$lower.lim
   if (log=="y" | log=="xy"){
@@ -217,6 +228,15 @@ alist1 <- function(result.sliding.reflim1, result.sliding.reflim2, use.mean=T, x
     polygon(c(cova2, rev(cova2)), c(cilloli2, rev(ciuloli2)), col=collot2, border=collot2)
     polygon(c(cova2, rev(cova2)), c(rsr2$ci.upper.lim.l, rev(rsr2$ci.upper.lim.u)), col=colupt2, border=colupt2)
   }
+  
+  legend("topright",
+         inset = c(-0.2, 0),
+         legend = c("Upper Limit (sd = 5)", "Lower Limit (sd = 5)", "Upper Limit (rs2)", "Lower Limit (rs2)"),
+         col = c(rgb(col.upp1[1], col.upp1[2], col.upp1[3]), rgb(col.low1[1], col.low1[2], col.low1[3]),
+                 rgb(col.upp2[1], col.upp2[2], col.upp2[3]), rgb(col.low2[1], col.low2[2], col.low2[3])),
+         lwd = lwd, 
+         title = "Limits",
+         xpd = TRUE) 
 }
 
 
