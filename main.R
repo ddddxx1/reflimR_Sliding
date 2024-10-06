@@ -25,7 +25,7 @@ run <- function(x, t, verteilung = "truncated_gaussian", standardabweichung = 5,
             res <- w_sliding.reflim(x, t, verteilung = verteilung, window.size = window.size, step.width = step.width, lognormal = lognormal)
             res1 <- w_sliding.reflim(x, t, verteilung = verteilung, standard_deviation = standardabweichung, window.size = window.size, step.width = step.width, lognormal = lognormal)
             # alist(res)
-            alist1(res, res1)
+            alist_custom_sd(res, res1)
         }
     } else if (verteilung == "gaussian") {
         if (standardabweichung == 5) {
@@ -35,7 +35,7 @@ run <- function(x, t, verteilung = "truncated_gaussian", standardabweichung = 5,
         } else {
             res <- w_sliding.reflim(x, t, verteilung = verteilung, window.size = NULL, step.width = NULL, lognormal = lognormal)
             res1 <- w_sliding.reflim(x, t, verteilung = verteilung, standard_deviation = standardabweichung, window.size = NULL, step.width = NULL, lognormal = lognormal)
-            alist1(res, res1)
+            alist_custom_sd(res, res1)
         }
       
     } else {
@@ -117,7 +117,9 @@ alist <- function(result.sliding.reflim,use.mean=T,xlim=NULL,ylim=NULL,xlab=NULL
            col = c(rgb(col.upp[1], col.upp[2], col.upp[3]), rgb(col.low[1], col.low[2], col.low[3])), 
            lwd = lwd, 
            title = "Limits", 
-           xpd = TRUE)
+           xpd = TRUE,
+           cex = 0.8,
+           bty = "n")
     
     
 }
@@ -132,7 +134,7 @@ alist <- function(result.sliding.reflim,use.mean=T,xlim=NULL,ylim=NULL,xlab=NULL
 
 
 
-#' alist1
+#' alist_custom_sd
 #' 
 #' @description 
 #' Plot 2 Sliding Reference Limits with Confidence Intervals
@@ -145,11 +147,11 @@ alist <- function(result.sliding.reflim,use.mean=T,xlim=NULL,ylim=NULL,xlab=NULL
 #' Another data frame or list containing the sliding reference limits and their associated confidence intervals
 #'  
 #' @example 
-#' alist1(res, res1)
+#' alist_custom_sd(res, res1)
 #' 
 #' @export
 
-alist1 <- function(result.sliding.reflim1, result.sliding.reflim2, use.mean=T, xlim=NULL, ylim=NULL, 
+alist_custom_sd <- function(result.sliding.reflim1, result.sliding.reflim2, use.mean=T, xlim=NULL, ylim=NULL, 
                   xlab=NULL, ylab=NULL, col.low1=c(0,0,1), col.upp1=c(1,0,0), col.low2=c(0,1,0), 
                   col.upp2=c(0,0,0), lwd=2, transparency=0.8, draw.cis=T, grid.col=NULL, log="", 
                   cut.at=1){
@@ -236,7 +238,9 @@ alist1 <- function(result.sliding.reflim1, result.sliding.reflim2, use.mean=T, x
                  rgb(col.upp2[1], col.upp2[2], col.upp2[3]), rgb(col.low2[1], col.low2[2], col.low2[3])),
          lwd = lwd, 
          title = "Limits",
-         xpd = TRUE) 
+         xpd = TRUE,
+         cex = 0.8,
+         bty = "n") 
 }
 
 

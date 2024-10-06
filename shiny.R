@@ -98,7 +98,7 @@ ui <- fluidPage(
                            "Step Width:",
                            value = NULL),
               # numericInput("a", "Parameter a:", value = 0),
-              numericInput("b", "Paramater b:", value = 0.5)
+              numericInput("b", "Vertex:", value = 0.5)
               # numericInput("c", "Paramater c:", value = 1)
             ),
             # for trapezoidal
@@ -138,6 +138,26 @@ ui <- fluidPage(
 
 server <- function(input, output, session) {
     values <- reactiveValues(upload_state = NULL)
+    
+    # Reset inputs when switching the distribution
+    observeEvent(input$verteilung, {
+        if (input$verteilung == "truncated_gaussian") {
+            updateNumericInput(session, "window_size", value = NULL)
+            updateNumericInput(session, "step_width", value = NULL)
+            updateNumericInput(session, "standardabweichung", value = 5)
+        } else if (input$verteilung == "gaussian") {
+            updateNumericInput(session, "standardabweichung", value = 5)
+        } else if (input$verteilung == "triangular") {
+            updateNumericInput(session, "window_size", value = NULL)
+            updateNumericInput(session, "step_width", value = NULL)
+            updateNumericInput(session, "b", value = 0.5)
+        } else if (input$verteilung == "trapezoidal") {
+            updateNumericInput(session, "window_size", value = NULL)
+            updateNumericInput(session, "step_width", value = NULL)
+            updateNumericInput(session, "b_trap", value = 0.3)
+            updateNumericInput(session, "c_trap", value = 0.6)
+        }
+    })
     
     observeEvent(input$datafile, {
         values$upload_state <- 'uploaded'
@@ -384,7 +404,8 @@ server <- function(input, output, session) {
                col = color_palette[c(100, 80, 50)],  
                pch = 16,       
                title = "Weighting",     
-               xpd = TRUE)                                 
+               xpd = TRUE,
+               bty = "n")                                 
     })
     
     
