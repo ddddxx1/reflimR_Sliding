@@ -423,6 +423,7 @@ server <- function(input, output, session) {
             return(NULL)
         }
         res <- alistplot
+        print(alistplot)
 
         # plot(res$t, res$x, xlab = "t", ylab = "x",
         #      main = paste("Scatter"),
