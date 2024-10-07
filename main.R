@@ -1,3 +1,5 @@
+#shiny-improvement
+
 #' run
 #' 
 #' @description 
@@ -18,28 +20,81 @@ run <- function(x, t, verteilung = "truncated_gaussian", standardabweichung = 5,
     if (verteilung == "truncated_gaussian") {
         if (standardabweichung == 5) {
             res <- w_sliding.reflim(x, t,verteilung = verteilung, window.size = window.size, step.width = step.width, lognormal = lognormal)
-            alist(result.sliding.reflim = res)
+            gg_alist(result.sliding.reflim = res)
         } else {
             res <- w_sliding.reflim(x, t, verteilung = verteilung, window.size = window.size, step.width = step.width, lognormal = lognormal)
             res1 <- w_sliding.reflim(x, t, verteilung = verteilung, standard_deviation = standardabweichung, window.size = window.size, step.width = step.width, lognormal = lognormal)
-            # alist(res)
-            alist1(res, res1)
+            gg_alist_custom_sd(res, res1)
         }
     } else if (verteilung == "gaussian") {
         if (standardabweichung == 5) {
             res <- w_sliding.reflim(x, t, verteilung = verteilung, window.size = NULL, step.width = NULL)
-            alist(result.sliding.reflim = res)
-            # print("alist finish")
+            gg_alist(result.sliding.reflim = res)
         } else {
             res <- w_sliding.reflim(x, t, verteilung = verteilung, window.size = NULL, step.width = NULL, lognormal = lognormal)
             res1 <- w_sliding.reflim(x, t, verteilung = verteilung, standard_deviation = standardabweichung, window.size = NULL, step.width = NULL, lognormal = lognormal)
-            alist1(res, res1)
+            gg_alist_custom_sd(res, res1)
         }
       
     } else {
         res <- w_sliding.reflim(x, t, verteilung = verteilung, a = a, b = b, c = c, d = d, window.size = window.size, step.width = step.width, lognormal = lognormal)
-        alist(result.sliding.reflim = res)
+        gg_alist(result.sliding.reflim = res)
     }
+}
+
+
+
+gg_alist <- function(result.sliding.reflim, use.mean = TRUE, xlim = NULL, ylim = NULL, 
+                     xlab = NULL, ylab = NULL, col.low = c(0, 0, 1), col.upp = c(1, 0, 0), 
+                     lwd = 1, transparency = 0.2, draw.cis = TRUE, grid.col = NULL, log = "", 
+                     cut.at = 1) {
+    
+    if (require("ggplot2")) {
+        library(ggplot2)
+    } else {
+        install.packages("ggplot2")
+        library(ggplot2)
+    }
+    
+    rsr <- result.sliding.reflim
+    
+    cova <- rsr$covariate.mean
+    if (!use.mean) {
+        cova <- rsr$covariate.mean
+    }
+    
+    df <- data.frame(
+        covariate = cova,
+        lower_lim = rsr$lower.lim,
+        upper_lim = rsr$upper.lim,
+        ci_lower_lim_low = rsr$ci.lower.lim.l,
+        ci_lower_lim_up = rsr$ci.lower.lim.u,
+        ci_upper_lim_low = rsr$ci.upper.lim.l,
+        ci_upper_lim_up = rsr$ci.upper.lim.u
+    )
+    
+    p <- ggplot(df, aes(x = covariate)) +
+        geom_ribbon(aes(ymin = ci_lower_lim_low, ymax = ci_lower_lim_up),
+                    fill = rgb(col.low[1], col.low[2], col.low[3], transparency),
+                    alpha = transparency) +
+        geom_ribbon(aes(ymin = ci_upper_lim_low, ymax = ci_upper_lim_up),
+                    fill = rgb(col.upp[1], col.upp[2], col.upp[3], transparency),
+                    alpha = transparency) +
+        geom_line(aes(y = lower_lim, color = "Lower Limit"), linewidth = lwd) +
+        geom_line(aes(y = upper_lim, color = "Upper Limit"), linewidth = lwd) +
+        labs(x = xlab, y = ylab) +
+        theme_minimal() +
+        
+        
+        scale_color_manual(
+            values = c("Upper Limit" = rgb(col.upp[1], col.upp[2], col.upp[3]), 
+                       "Lower Limit" = rgb(col.low[1], col.low[2], col.low[3])),
+            limits = c("Upper Limit", "Lower Limit")
+        ) +
+        labs(color = "Limits") +
+        theme(legend.position = "right")
+
+    return(p)
 }
 
 
@@ -76,6 +131,8 @@ alist <- function(result.sliding.reflim,use.mean=T,xlim=NULL,ylim=NULL,xlab=NULL
         }
     }
     
+    par(mar = c(3, 3, 3, 8))
+    
     
     # Plotting the lower limit curve
     loli <- rsr$lower.lim
@@ -107,7 +164,111 @@ alist <- function(result.sliding.reflim,use.mean=T,xlim=NULL,ylim=NULL,xlab=NULL
         polygon(c(cova,rev(cova)),c(rsr$ci.upper.lim.l,rev(rsr$ci.upper.lim.u)),col=colupt,border=colupt)
     }
     
+    legend("topright",
+           inset = c(-0.2, 0), 
+           legend = c("Upper Limit", "Lower Limit"), 
+           col = c(rgb(col.upp[1], col.upp[2], col.upp[3]), rgb(col.low[1], col.low[2], col.low[3])), 
+           lwd = lwd, 
+           title = "Limits", 
+           xpd = TRUE,
+           cex = 0.8,
+           bty = "n")
+}
+
+
+
+
+
+
+
+gg_alist_custom_sd <- function(result.sliding.reflim1, result.sliding.reflim2, use.mean = TRUE, 
+                            xlim = NULL, ylim = NULL, xlab = NULL, ylab = NULL, 
+                            col.low1 = c(0, 0, 1), col.upp1 = c(1, 0, 0), col.low2 = c(0, 1, 0), 
+                            col.upp2 = c(0, 0, 0), lwd = 1, transparency = 0.2, 
+                            draw.cis = TRUE, grid.col = NULL, log = "", cut.at = 1) {
     
+    # Load ggplot2 if not already loaded
+    if (!require("ggplot2")) {
+        install.packages("ggplot2")
+        library(ggplot2)
+    }
+    
+    # Extract data from both results
+    rsr1 <- result.sliding.reflim1
+    rsr2 <- result.sliding.reflim2
+    
+    cova1 <- if (use.mean) rsr1$covariate.mean else rsr1$covariate.sd
+    cova2 <- if (use.mean) rsr2$covariate.mean else rsr2$covariate.sd
+    
+    # Create data frames for plotting
+    df1 <- data.frame(
+        covariate = cova1,
+        lower_lim = rsr1$lower.lim,
+        upper_lim = rsr1$upper.lim,
+        ci_lower_lim_low = rsr1$ci.lower.lim.l,
+        ci_lower_lim_up = rsr1$ci.lower.lim.u,
+        ci_upper_lim_low = rsr1$ci.upper.lim.l,
+        ci_upper_lim_up = rsr1$ci.upper.lim.u
+    )
+    
+    df2 <- data.frame(
+        covariate = cova2,
+        lower_lim = rsr2$lower.lim,
+        upper_lim = rsr2$upper.lim,
+        ci_lower_lim_low = rsr2$ci.lower.lim.l,
+        ci_lower_lim_up = rsr2$ci.lower.lim.u,
+        ci_upper_lim_low = rsr2$ci.upper.lim.l,
+        ci_upper_lim_up = rsr2$ci.upper.lim.u
+    )
+    
+    # Set ylim if not provided
+    if (is.null(ylim)) {
+        ylim <- range(c(df1$ci_lower_lim_low, df1$ci_upper_lim_up, df2$ci_lower_lim_low, df2$ci_upper_lim_up), na.rm = TRUE)
+        if (log == "y" || log == "xy") {
+            ylim[1] <- max(c(cut.at, ylim[1]))
+        }
+    }
+    
+    # Start plotting
+    p <- ggplot() +
+        geom_ribbon(data = df1, aes(x = covariate, ymin = ci_lower_lim_low, ymax = ci_lower_lim_up),
+                    fill = rgb(col.low1[1], col.low1[2], col.low1[3], transparency), alpha = transparency) +
+        geom_ribbon(data = df1, aes(x = covariate, ymin = ci_upper_lim_low, ymax = ci_upper_lim_up),
+                    fill = rgb(col.upp1[1], col.upp1[2], col.upp1[3], transparency), alpha = transparency) +
+        geom_line(data = df1, aes(x = covariate, y = lower_lim, color = "Lower Limit 1(sd = 5)"), linewidth = lwd) +
+        geom_line(data = df1, aes(x = covariate, y = upper_lim, color = "Upper Limit 1(sd = 5)"), linewidth = lwd) +
+        
+        geom_ribbon(data = df2, aes(x = covariate, ymin = ci_lower_lim_low, ymax = ci_lower_lim_up),
+                    fill = rgb(col.low2[1], col.low2[2], col.low2[3], transparency), alpha = transparency) +
+        geom_ribbon(data = df2, aes(x = covariate, ymin = ci_upper_lim_low, ymax = ci_upper_lim_up),
+                    fill = rgb(col.upp2[1], col.upp2[2], col.upp2[3], transparency), alpha = transparency) +
+        geom_line(data = df2, aes(x = covariate, y = lower_lim, color = "Lower Limit 2"), linewidth = lwd) +
+        geom_line(data = df2, aes(x = covariate, y = upper_lim, color = "Upper Limit 2"), linewidth = lwd) +
+        
+        labs(x = xlab, y = ylab, color = "Limits") +
+        scale_color_manual(values = c("Upper Limit 1(sd = 5)" = rgb(col.upp1[1], col.upp1[2], col.upp1[3]), 
+                                      "Lower Limit 1(sd = 5)" = rgb(col.low1[1], col.low1[2], col.low1[3]),
+                                      "Upper Limit 2" = rgb(col.upp2[1], col.upp2[2], col.upp2[3]),
+                                      "Lower Limit 2" = rgb(col.low2[1], col.low2[2], col.low2[3])),
+                           limits = c("Upper Limit 1(sd = 5)", "Upper Limit 2", "Lower Limit 1(sd = 5)", "Lower Limit 2")) +
+        theme_minimal() +
+        theme(legend.position = "right")
+    
+    # Apply xlim and ylim if provided
+    if (!is.null(xlim)) {
+        p <- p + xlim(xlim)
+    }
+    
+    if (!is.null(ylim)) {
+        p <- p + ylim(ylim)
+    }
+    
+    # Optionally add grid lines
+    if (!is.null(grid.col)) {
+        p <- p + theme(panel.grid.major = element_line(color = grid.col))
+    }
+    
+    return(p)
 }
 
 
@@ -118,10 +279,7 @@ alist <- function(result.sliding.reflim,use.mean=T,xlim=NULL,ylim=NULL,xlab=NULL
 
 
 
-
-
-
-#' alist1
+#' alist_custom_sd
 #' 
 #' @description 
 #' Plot 2 Sliding Reference Limits with Confidence Intervals
@@ -134,11 +292,11 @@ alist <- function(result.sliding.reflim,use.mean=T,xlim=NULL,ylim=NULL,xlab=NULL
 #' Another data frame or list containing the sliding reference limits and their associated confidence intervals
 #'  
 #' @example 
-#' alist1(res, res1)
+#' alist_custom_sd(res, res1)
 #' 
 #' @export
 
-alist1 <- function(result.sliding.reflim1, result.sliding.reflim2, use.mean=T, xlim=NULL, ylim=NULL, 
+alist_custom_sd <- function(result.sliding.reflim1, result.sliding.reflim2, use.mean=T, xlim=NULL, ylim=NULL, 
                   xlab=NULL, ylab=NULL, col.low1=c(0,0,1), col.upp1=c(1,0,0), col.low2=c(0,1,0), 
                   col.upp2=c(0,0,0), lwd=2, transparency=0.8, draw.cis=T, grid.col=NULL, log="", 
                   cut.at=1){
@@ -163,6 +321,8 @@ alist1 <- function(result.sliding.reflim1, result.sliding.reflim2, use.mean=T, x
       }
     }
   }
+  
+  par(mar = c(3,3,3,8))
   
   # rsr1 lower limit curve
   loli1 <- rsr1$lower.lim
@@ -215,6 +375,17 @@ alist1 <- function(result.sliding.reflim1, result.sliding.reflim2, use.mean=T, x
     polygon(c(cova2, rev(cova2)), c(cilloli2, rev(ciuloli2)), col=collot2, border=collot2)
     polygon(c(cova2, rev(cova2)), c(rsr2$ci.upper.lim.l, rev(rsr2$ci.upper.lim.u)), col=colupt2, border=colupt2)
   }
+  
+  legend("topright",
+         inset = c(-0.2, 0),
+         legend = c("Upper Limit (sd = 5)", "Lower Limit (sd = 5)", "Upper Limit (rs2)", "Lower Limit (rs2)"),
+         col = c(rgb(col.upp1[1], col.upp1[2], col.upp1[3]), rgb(col.low1[1], col.low1[2], col.low1[3]),
+                 rgb(col.upp2[1], col.upp2[2], col.upp2[3]), rgb(col.low2[1], col.low2[2], col.low2[3])),
+         lwd = lwd, 
+         title = "Limits",
+         xpd = TRUE,
+         cex = 0.8,
+         bty = "n") 
 }
 
 

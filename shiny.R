@@ -1,3 +1,4 @@
+#shiny-improvement
 setwd("D:\\project\\R\\Praxisprojekt")
 source("main.R")
 # source("D:/AppData/OneDrive - lelelelele/Studium/Bachelor/WiSe24-25/Praxisprojekt/code/main.R")
@@ -55,7 +56,8 @@ ui <- fluidPage(
                                     "Trapezoidal" = "trapezoidal"),
                         selected = "truncated_gaussian"),
             fileInput("datafile", "Upload CSV File", accept = c("text/csv", "text/comma-separated-values,text/plain", ".csv")),
-
+            actionButton('reset', 'Reset Input', icon = icon("trash")),
+            
             selectInput("xcol", "Select X Column", choices = NULL),
             selectInput("tcol", "Select T Column", choices = NULL),
 
@@ -96,7 +98,7 @@ ui <- fluidPage(
                            "Step Width:",
                            value = NULL),
               # numericInput("a", "Parameter a:", value = 0),
-              numericInput("b", "Paramater b:", value = 0.5)
+              numericInput("b", "Vertex:", value = 0.5)
               # numericInput("c", "Paramater c:", value = 1)
             ),
             # for trapezoidal
@@ -116,17 +118,65 @@ ui <- fluidPage(
         ),
 
         mainPanel(
-            fluidRow(
-                column(12, plotOutput("scatterPlot"), uiOutput("textBelowPlot")),
-                column(12, withSpinner(plotOutput("scatterPlot2")))
-            ),
-            textOutput("errorMessage")
+            tabsetPanel(
+                tabPanel("Dataset Scatter Plot",
+                         fluidRow(
+                             column(12, plotOutput("uploadedScatterPlot"))
+                        )
+                ),
+                tabPanel("Result",
+                         fluidRow(
+                             column(12, plotOutput("scatterPlot")),
+                             column(12, withSpinner(plotOutput("scatterPlot2")))
+                         )
+                )
+            )
         )
     )
 )
 
 
 server <- function(input, output, session) {
+    values <- reactiveValues(upload_state = NULL)
+    
+    # Reset inputs when switching the distribution
+    observeEvent(input$verteilung, {
+        if (input$verteilung == "truncated_gaussian") {
+            updateNumericInput(session, "window_size", value = NULL)
+            updateNumericInput(session, "step_width", value = NULL)
+            updateNumericInput(session, "standardabweichung", value = 5)
+        } else if (input$verteilung == "gaussian") {
+            updateNumericInput(session, "standardabweichung", value = 5)
+        } else if (input$verteilung == "triangular") {
+            updateNumericInput(session, "window_size", value = NULL)
+            updateNumericInput(session, "step_width", value = NULL)
+            updateNumericInput(session, "b", value = 0.5)
+        } else if (input$verteilung == "trapezoidal") {
+            updateNumericInput(session, "window_size", value = NULL)
+            updateNumericInput(session, "step_width", value = NULL)
+            updateNumericInput(session, "b_trap", value = 0.3)
+            updateNumericInput(session, "c_trap", value = 0.6)
+        }
+    })
+    
+    observeEvent(input$datafile, {
+        values$upload_state <- 'uploaded'
+    })
+    
+    observeEvent(input$reset, {
+        values$upload_state <- 'reset'
+    })
+    
+    dataset_input <- reactive({
+        if (is.null(values$upload_state)) {
+            return(list(x = x, t = t))
+        } else if (values$upload_state == 'uploaded') {
+            return(read.csv(input$datafile$datapath))
+        } else if (values$upload_state == 'reset') {
+            return(list(x = x, t = t))
+        }
+    })
+    
     uploaded_data <- reactive({
       if (is.null(input$datafile)) {
         return(NULL)
@@ -137,7 +187,8 @@ server <- function(input, output, session) {
     })
 
     observe({
-      file_data <- uploaded_data()
+      # file_data <- uploaded_data()
+      file_data <- dataset_input()
 
       if (!is.null(file_data)) {
         col_names <- names(file_data)
@@ -147,7 +198,8 @@ server <- function(input, output, session) {
     })
 
     reactive_data <- reactive({
-      file_data <- uploaded_data()
+      # file_data <- uploaded_data()
+      file_data <- dataset_input()
 
       if (is.null(file_data)) {
         return(list(x = x, t = t))  # If not uploaded, use standard x/t
@@ -176,13 +228,13 @@ server <- function(input, output, session) {
         }
 
         standardabweichung <- input$standardabweichung
-        a <- input$a
+        # a <- input$a
         b <- input$b
-        c <- input$c
-        a_trap <- input$a_trap
+        # c <- input$c
+        # a_trap <- input$a_trap
         b_trap <- input$b_trap
         c_trap <- input$c_trap
-        d_trap <- input$d_trap
+        # d_trap <- input$d_trap
         
         
 
@@ -248,13 +300,13 @@ server <- function(input, output, session) {
         }
         
         standardabweichung <- input$standardabweichung
-        a <- input$a
+        # a <- input$a
         b <- input$b
-        c <- input$c
-        a_trap <- input$a_trap
+        # c <- input$c
+        # a_trap <- input$a_trap
         b_trap <- input$b_trap
         c_trap <- input$c_trap
-        d_trap <- input$d_trap
+        # d_trap <- input$d_trap
 
         result <- tryCatch({
             if (input$verteilung == "truncated_gaussian") {
@@ -294,41 +346,50 @@ server <- function(input, output, session) {
         }
         return(NULL)
     })
+    
+    output$uploadedScatterPlot <- renderPlot({
+        user_data <- reactive_data()
+        if (is.null(user_data)) {
+            return(NULL)
+        }
+        
+        plot(user_data$t, user_data$x,
+             xlab = input$tcol, 
+             ylab = input$xcol, 
+             main = "Scatter Plot of Uploaded Data",
+             pch = 16, 
+             col = "darkblue")
+    })
 
     output$scatterPlot <- renderPlot({
         data_info <- data()
-
+        
         if (!is.null(data_info$error)) {
             return(NULL)
         }
-
+        
         res <- data_info$res
         segment_indices <- data_info$segment_indices
         segment_count <- data_info$segment_count
-
-        # Get the currently selected segment index
+        
         segment_index <- input$segment
 
-        # Get the start and end positions of the current segment
         if (segment_index == 1) {
             start_row <- 1
         } else {
             start_row <- segment_indices[segment_index - 1] + 2
         }
         end_row <- segment_indices[segment_index]
-
-        # Extract the data of the segment
+        
         segment_data <- res[start_row:end_row, ]
-
-        # color
         w_values <- as.numeric(segment_data$w)
-        color_palette <- colorRampPalette(c("white", "black"))(100)
-        w_colors <- color_palette[cut(w_values, breaks = 100)]
+        
+        # Creating a continuous color gradient with colorRampPalette()
+        color_palette <- colorRampPalette(c("blue", "red"))(100)
+        w_colors <- color_palette[cut(w_values, breaks = 100, labels = FALSE)]
 
-        w_colors[w_values == 1] <- "red"
-        w_colors[w_values >= 0.8 & w_values < 1] <- "blue"
-        w_colors[w_values >= 0.5 & w_values < 0.8] <- "green"
-
+        par(mar = c(3, 3, 3, 8))
+        
         plot(as.numeric(segment_data$t),
              as.numeric(segment_data$x),
              xlab = "t",
@@ -336,26 +397,37 @@ server <- function(input, output, session) {
              main = paste("Scatter Plot for Segment", segment_index, "with Distribution:", input$verteilung),
              pch = 16,
              col = w_colors)
+        
+        legend("topright", 
+               inset = c(-0.2, 0), 
+               legend = c("w = 1", "w = 0.8", "w = 0.5"), 
+               col = color_palette[c(100, 80, 50)],  
+               pch = 16,       
+               title = "Weighting",     
+               xpd = TRUE,
+               bty = "n")                                 
     })
     
-    output$textBelowPlot <- renderUI({
-        HTML("<p style='color:red;'>Weighting = 1</p>
-              <p style='color:blue;'>Weighting >= 0.8 and < 1</p>
-              <p style='color:green;'>Weighting >= 0.5 and < 0.8</p>
-              <p style='color:black;'>Weighting < 0.5</p>")
-    })
+    
+    # output$textBelowPlot <- renderUI({
+    #     HTML("<p style='color:red;'>Weighting = 1</p>
+    #           <p style='color:blue;'>Weighting >= 0.8 and < 1</p>
+    #           <p style='color:green;'>Weighting >= 0.5 and < 0.8</p>
+    #           <p style='color:black;'>Weighting < 0.5</p>")
+    # })
 
     output$scatterPlot2 <- renderPlot({
-        data_info1 <- plot_data()
+        alistplot <- plot_data()
 
-        if (is.null(data_info1)) {
+        if (is.null(alistplot)) {
             return(NULL)
         }
-        res <- data_info1
+        res <- alistplot
+        print(alistplot)
 
-        plot(res$t, res$x, xlab = "t", ylab = "x",
-             main = paste("Scatter"),
-             pch = 16, col = "blue")
+        # plot(res$t, res$x, xlab = "t", ylab = "x",
+        #      main = paste("Scatter"),
+        #      pch = 16, col = "blue")
     })
 }
 
