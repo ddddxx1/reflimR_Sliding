@@ -111,8 +111,8 @@ ui <- fluidPage(
                            "Step Width:",
                            value = NULL),
               # numericInput("a_trap", "Parameter a:", value = 0),
-              numericInput("b_trap", "Parameter b:", value = 0.3),
-              numericInput("c_trap", "Parameter c:", value = 0.6)
+              numericInput("b_trap", "Top left angle:", value = 0.3),
+              numericInput("c_trap", "Top right angle:", value = 0.6)
               # numericInput("d_trap", "Parameter d:", value = 1)
             )
         ),
