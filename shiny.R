@@ -118,7 +118,7 @@ ui <- fluidPage(
         ),
 
         mainPanel(
-            tabsetPanel(
+            tabsetPanel(id = "tabs",
                 tabPanel("Dataset Scatter Plot",
                          fluidRow(
                              column(12, plotOutput("uploadedScatterPlot"))
@@ -127,7 +127,17 @@ ui <- fluidPage(
                 tabPanel("Result",
                          fluidRow(
                              column(12, plotOutput("scatterPlot")),
+                             column(12, div(style = "color: red;", textOutput("errorMessage"))),
                              column(12, withSpinner(plotOutput("scatterPlot2")))
+                         )
+                ),
+                tabPanel("Comparison",
+                         fluidRow(
+                             conditionalPanel(
+                                 condition = "input.tabs == 'Comparison'",
+                                 column(12, numericInput("comparison_innput_1", "Comparison Input :", value = 6)),
+                                 column(12, actionButton("compare", "Compare"))
+                             )
                          )
                 )
             )
@@ -332,6 +342,7 @@ server <- function(input, output, session) {
             }
             
         }, error = function(e) {
+            message("Error: ", e$message)
             return(NULL)
         })
         return(result)
@@ -340,10 +351,19 @@ server <- function(input, output, session) {
     # show Error Messages in UI
     output$errorMessage <- renderText({
         data_info <- data()
-        if (!is.null(data_info$error)) {
-            # return(paste("Error: Error in function w_sliding.reflim.plot")) # error
-          return(paste("Error:", data_info$error))
+        plot_info <- plot_data()
+        
+        # if (!is.null(data_info$error)) {
+        #     # return(paste("Error: Error in function w_sliding.reflim.plot")) # error
+        #   return(paste("Error:", data_info$error))
+        # }
+        # if (!is.null(plot_info$error)) {
+        #     return(paste("Error: ", plot_info$error))
+        # }
+        if (!is.null(data_info$error) || !is.null(plot_info$error)) {
+            return("Error: Disallowed Parameters. Please change!")
         }
+        
         return(NULL)
     })
     
@@ -361,7 +381,7 @@ server <- function(input, output, session) {
              col = "darkblue")
     })
 
-    output$scatterPlot <- renderPlot({
+    output$scatterPlot <- renderPlot({  # first plot
         data_info <- data()
         
         if (!is.null(data_info$error)) {
@@ -384,6 +404,8 @@ server <- function(input, output, session) {
         segment_data <- res[start_row:end_row, ]
         w_values <- as.numeric(segment_data$w)
         
+        total_w <- sum(w_values, na.rm = TRUE)
+        
         # Creating a continuous color gradient with colorRampPalette()
         color_palette <- colorRampPalette(c("blue", "red"))(100)
         w_colors <- color_palette[cut(w_values, breaks = 100, labels = FALSE)]
@@ -405,7 +427,14 @@ server <- function(input, output, session) {
                pch = 16,       
                title = "Weighting",     
                xpd = TRUE,
-               bty = "n")                                 
+               bty = "n")   
+        
+        text(x = par("usr")[2] - 0.3 * diff(par("usr")[1:2]),  
+             y = par("usr")[3] + 0.05 * diff(par("usr")[3:4]),
+             labels = paste("Total w:", round(total_w, 2)), 
+             pos = 4, 
+             col = "black",
+             cex = 1.2)
     })
     
     
