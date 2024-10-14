@@ -119,12 +119,12 @@ ui <- fluidPage(
 
         mainPanel(
             tabsetPanel(id = "tabs",
-                tabPanel("Dataset Scatter Plot",
+                tabPanel("Dataset",
                          fluidRow(
                              column(12, plotOutput("uploadedScatterPlot"))
                         )
                 ),
-                tabPanel("Result",
+                tabPanel("Limit",
                          fluidRow(
                              column(12, plotOutput("scatterPlot")),
                              column(12, div(style = "color: red;", textOutput("errorMessage"))),
@@ -135,8 +135,12 @@ ui <- fluidPage(
                          fluidRow(
                              conditionalPanel(
                                  condition = "input.tabs == 'Comparison'",
-                                 column(12, numericInput("comparison_innput_1", "Comparison Input :", value = 6)),
-                                 column(12, actionButton("compare", "Compare"))
+                                 column(12, div(style = "color: red;", textOutput("falseDistribution"))),
+                                 # column(12, div(style = "color: red;", textOutput("errorMessage"))),
+                                 column(12, numericInput("comparison_sd", "Comparison SD :", value = 6)),
+                                 column(12, actionButton("compare", "Compare")),
+                                 column(12, div(style = "color: red;", textOutput("paError"))),
+                                 column(12, plotOutput("comparisonPlot"))
                              )
                          )
                 )
@@ -236,6 +240,7 @@ server <- function(input, output, session) {
         } else {
             step_width <- input$step_width
         }
+        
 
         standardabweichung <- input$standardabweichung
         # a <- input$a
@@ -457,6 +462,41 @@ server <- function(input, output, session) {
         # plot(res$t, res$x, xlab = "t", ylab = "x",
         #      main = paste("Scatter"),
         #      pch = 16, col = "blue")
+    })
+    
+    
+    # Comparison
+    output$falseDistribution <- renderText({
+        if (input$verteilung != "truncated_gaussian" && input$verteilung != "gaussian") {
+            return("This distribution does not support comparison!")
+        }
+        return(NULL)
+    })
+    
+    observeEvent(input$compare, {
+        if (input$verteilung == "truncated_gaussian" || input$verteilung == "gaussian") {
+            user_data <- reactive_data()
+            user_x <- user_data$x
+            user_t <- user_data$t
+            
+            output$comparisonPlot <- renderPlot({
+                tryCatch({
+                    res1 <- w_sliding.reflim(user_x, user_t, verteilung = input$verteilung, standard_deviation = input$standardabweichung)
+                    res2 <- w_sliding.reflim(user_x, user_t, verteilung = input$verteilung, standard_deviation = input$comparison_sd)
+                    alist_custom_sd_plot <- gg_alist_custom_sd(res1, res2)
+                    plot(alist_custom_sd_plot)
+                    
+                    output$paError <- renderText({""})
+                }, error = function(e) {
+                    output$paError <- renderText({
+                        return("Error: Disallowed Parameters. Please change!")
+                    })
+                })
+                
+            })
+        } else {
+            showNotification("Comparison only available for Gaussian or Truncated Gaussian distributions", type = "error")
+        }
     })
 }
 

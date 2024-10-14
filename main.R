@@ -17,29 +17,31 @@
 
 run <- function(x, t, verteilung = "truncated_gaussian", standardabweichung = 5, b = NULL, c = NULL, window.size=NULL,step.width=NULL,lognormal=NULL,perc.trunc=2.5,n.min.window=200,n.min=100,apply.rounding=FALSE) {
     par(mar = c(3,3,3,3))
-    if (verteilung == "truncated_gaussian") {
-        if (standardabweichung == 5) {
-            res <- w_sliding.reflim(x, t,verteilung = verteilung, window.size = window.size, step.width = step.width, lognormal = lognormal)
-            gg_alist(result.sliding.reflim = res)
-        } else {
-            res <- w_sliding.reflim(x, t, verteilung = verteilung, window.size = window.size, step.width = step.width, lognormal = lognormal)
-            res1 <- w_sliding.reflim(x, t, verteilung = verteilung, standard_deviation = standardabweichung, window.size = window.size, step.width = step.width, lognormal = lognormal)
-            gg_alist_custom_sd(res, res1)
-        }
-    } else if (verteilung == "gaussian") {
-        if (standardabweichung == 5) {
-            res <- w_sliding.reflim(x, t, verteilung = verteilung, window.size = NULL, step.width = NULL)
-            gg_alist(result.sliding.reflim = res)
-        } else {
-            res <- w_sliding.reflim(x, t, verteilung = verteilung, window.size = NULL, step.width = NULL, lognormal = lognormal)
-            res1 <- w_sliding.reflim(x, t, verteilung = verteilung, standard_deviation = standardabweichung, window.size = NULL, step.width = NULL, lognormal = lognormal)
-            gg_alist_custom_sd(res, res1)
-        }
-      
-    } else {
-        res <- w_sliding.reflim(x, t, verteilung = verteilung, a = a, b = b, c = c, d = d, window.size = window.size, step.width = step.width, lognormal = lognormal)
-        gg_alist(result.sliding.reflim = res)
-    }
+    # if (verteilung == "truncated_gaussian") {
+    #     if (standardabweichung == 5) {
+    #         res <- w_sliding.reflim(x, t,verteilung = verteilung, window.size = window.size, step.width = step.width, lognormal = lognormal)
+    #         gg_alist(result.sliding.reflim = res)
+    #     } else {
+    #         res <- w_sliding.reflim(x, t, verteilung = verteilung, window.size = window.size, step.width = step.width, lognormal = lognormal)
+    #         res1 <- w_sliding.reflim(x, t, verteilung = verteilung, standard_deviation = standardabweichung, window.size = window.size, step.width = step.width, lognormal = lognormal)
+    #         gg_alist_custom_sd(res, res1)
+    #     }
+    # } else if (verteilung == "gaussian") {
+    #     if (standardabweichung == 5) {
+    #         res <- w_sliding.reflim(x, t, verteilung = verteilung, window.size = NULL, step.width = NULL)
+    #         gg_alist(result.sliding.reflim = res)
+    #     } else {
+    #         res <- w_sliding.reflim(x, t, verteilung = verteilung, window.size = NULL, step.width = NULL, lognormal = lognormal)
+    #         res1 <- w_sliding.reflim(x, t, verteilung = verteilung, standard_deviation = standardabweichung, window.size = NULL, step.width = NULL, lognormal = lognormal)
+    #         gg_alist_custom_sd(res, res1)
+    #     }
+    #   
+    # } else {
+    #     res <- w_sliding.reflim(x, t, verteilung = verteilung, a = a, b = b, c = c, d = d, window.size = window.size, step.width = step.width, lognormal = lognormal)
+    #     gg_alist(result.sliding.reflim = res)
+    
+    res <- w_sliding.reflim(x, t, verteilung = verteilung,standard_deviation = standardabweichung, b = b, c = c, window.size = window.size, step.width = step.width, lognormal = lognormal)
+    gg_alist(result.sliding.reflim = res)
 }
 
 
@@ -112,68 +114,68 @@ gg_alist <- function(result.sliding.reflim, use.mean = TRUE, xlim = NULL, ylim =
 #' 
 #' @export
 
-alist <- function(result.sliding.reflim,use.mean=T,xlim=NULL,ylim=NULL,xlab=NULL,ylab=NULL,col.low=c(0,0,1),col.upp=c(1,0,0),lwd=2,transparency=0.8,draw.cis=T,grid.col=NULL,log="",cut.at=1){
-    rsr <- result.sliding.reflim
-    
-    cova <- rsr$covariate.mean
-    if (!use.mean){
-        cova <- rsr$covariate.mean
-    }
-    
-    ylim.mod <- ylim
-    if (is.null(ylim)){
-        ylim.mod <- c(min(rsr$lower.lim),max(rsr$upper.lim))
-        if (draw.cis){
-            ylim.mod <- c(min(rsr$ci.lower.lim.l),max(rsr$ci.upper.lim.u))
-            if (log=="y" | log=="xy"){
-                ylim.mod[1] <- max(c(cut.at,ylim.mod[1]))
-            }
-        }
-    }
-    
-    par(mar = c(3, 3, 3, 8))
-    
-    
-    # Plotting the lower limit curve
-    loli <- rsr$lower.lim
-    if (log=="y" | log=="xy"){
-        loli <- sapply(loli,cut.at.l,l=cut.at)
-    }
-    
-    plot(cova,loli,xlim=xlim,ylim=ylim.mod,type="l",lwd=lwd,col=rgb(col.low[1],col.low[2],col.low[3]),xlab=xlab,ylab=ylab,log=log)
-    if (!is.null(grid.col)){
-        grid(col=grid.col)
-    }
-    
-    # Plotting the upper limit curve
-    points(cova,rsr$upper.lim,type="l",lwd=lwd,col=rgb(col.upp[1],col.upp[2],col.upp[3]))
-    
-    # Plotting confidence intervals
-    cilloli <- rsr$ci.lower.lim.l
-    ciuloli <- rsr$ci.lower.lim.u
-    if (log=="y" | log=="xy"){
-        cilloli <- sapply(cilloli,cut.at.l,l=cut.at)
-        ciuloli <- sapply(ciuloli,cut.at.l,l=cut.at)
-    }
-    
-    
-    if (draw.cis){
-        collot <- rgb(col.low[1],col.low[2],col.low[3],1-transparency)
-        colupt <- rgb(col.upp[1],col.upp[2],col.upp[3],1-transparency)
-        polygon(c(cova,rev(cova)),c(cilloli,rev(ciuloli)),col=collot,border=collot)
-        polygon(c(cova,rev(cova)),c(rsr$ci.upper.lim.l,rev(rsr$ci.upper.lim.u)),col=colupt,border=colupt)
-    }
-    
-    legend("topright",
-           inset = c(-0.2, 0), 
-           legend = c("Upper Limit", "Lower Limit"), 
-           col = c(rgb(col.upp[1], col.upp[2], col.upp[3]), rgb(col.low[1], col.low[2], col.low[3])), 
-           lwd = lwd, 
-           title = "Limits", 
-           xpd = TRUE,
-           cex = 0.8,
-           bty = "n")
-}
+# alist <- function(result.sliding.reflim,use.mean=T,xlim=NULL,ylim=NULL,xlab=NULL,ylab=NULL,col.low=c(0,0,1),col.upp=c(1,0,0),lwd=2,transparency=0.8,draw.cis=T,grid.col=NULL,log="",cut.at=1){
+#     rsr <- result.sliding.reflim
+#     
+#     cova <- rsr$covariate.mean
+#     if (!use.mean){
+#         cova <- rsr$covariate.mean
+#     }
+#     
+#     ylim.mod <- ylim
+#     if (is.null(ylim)){
+#         ylim.mod <- c(min(rsr$lower.lim),max(rsr$upper.lim))
+#         if (draw.cis){
+#             ylim.mod <- c(min(rsr$ci.lower.lim.l),max(rsr$ci.upper.lim.u))
+#             if (log=="y" | log=="xy"){
+#                 ylim.mod[1] <- max(c(cut.at,ylim.mod[1]))
+#             }
+#         }
+#     }
+#     
+#     par(mar = c(3, 3, 3, 8))
+#     
+#     
+#     # Plotting the lower limit curve
+#     loli <- rsr$lower.lim
+#     if (log=="y" | log=="xy"){
+#         loli <- sapply(loli,cut.at.l,l=cut.at)
+#     }
+#     
+#     plot(cova,loli,xlim=xlim,ylim=ylim.mod,type="l",lwd=lwd,col=rgb(col.low[1],col.low[2],col.low[3]),xlab=xlab,ylab=ylab,log=log)
+#     if (!is.null(grid.col)){
+#         grid(col=grid.col)
+#     }
+#     
+#     # Plotting the upper limit curve
+#     points(cova,rsr$upper.lim,type="l",lwd=lwd,col=rgb(col.upp[1],col.upp[2],col.upp[3]))
+#     
+#     # Plotting confidence intervals
+#     cilloli <- rsr$ci.lower.lim.l
+#     ciuloli <- rsr$ci.lower.lim.u
+#     if (log=="y" | log=="xy"){
+#         cilloli <- sapply(cilloli,cut.at.l,l=cut.at)
+#         ciuloli <- sapply(ciuloli,cut.at.l,l=cut.at)
+#     }
+#     
+#     
+#     if (draw.cis){
+#         collot <- rgb(col.low[1],col.low[2],col.low[3],1-transparency)
+#         colupt <- rgb(col.upp[1],col.upp[2],col.upp[3],1-transparency)
+#         polygon(c(cova,rev(cova)),c(cilloli,rev(ciuloli)),col=collot,border=collot)
+#         polygon(c(cova,rev(cova)),c(rsr$ci.upper.lim.l,rev(rsr$ci.upper.lim.u)),col=colupt,border=colupt)
+#     }
+#     
+#     legend("topright",
+#            inset = c(-0.2, 0), 
+#            legend = c("Upper Limit", "Lower Limit"), 
+#            col = c(rgb(col.upp[1], col.upp[2], col.upp[3]), rgb(col.low[1], col.low[2], col.low[3])), 
+#            lwd = lwd, 
+#            title = "Limits", 
+#            xpd = TRUE,
+#            cex = 0.8,
+#            bty = "n")
+# }
 
 
 
@@ -235,22 +237,22 @@ gg_alist_custom_sd <- function(result.sliding.reflim1, result.sliding.reflim2, u
                     fill = rgb(col.low1[1], col.low1[2], col.low1[3], transparency), alpha = transparency) +
         geom_ribbon(data = df1, aes(x = covariate, ymin = ci_upper_lim_low, ymax = ci_upper_lim_up),
                     fill = rgb(col.upp1[1], col.upp1[2], col.upp1[3], transparency), alpha = transparency) +
-        geom_line(data = df1, aes(x = covariate, y = lower_lim, color = "Lower Limit 1(sd = 5)"), linewidth = lwd) +
-        geom_line(data = df1, aes(x = covariate, y = upper_lim, color = "Upper Limit 1(sd = 5)"), linewidth = lwd) +
+        geom_line(data = df1, aes(x = covariate, y = lower_lim, color = "Lower Limit 1(standard)"), linewidth = lwd) +
+        geom_line(data = df1, aes(x = covariate, y = upper_lim, color = "Upper Limit 1(standard)"), linewidth = lwd) +
         
         geom_ribbon(data = df2, aes(x = covariate, ymin = ci_lower_lim_low, ymax = ci_lower_lim_up),
                     fill = rgb(col.low2[1], col.low2[2], col.low2[3], transparency), alpha = transparency) +
         geom_ribbon(data = df2, aes(x = covariate, ymin = ci_upper_lim_low, ymax = ci_upper_lim_up),
                     fill = rgb(col.upp2[1], col.upp2[2], col.upp2[3], transparency), alpha = transparency) +
-        geom_line(data = df2, aes(x = covariate, y = lower_lim, color = "Lower Limit 2"), linewidth = lwd) +
-        geom_line(data = df2, aes(x = covariate, y = upper_lim, color = "Upper Limit 2"), linewidth = lwd) +
+        geom_line(data = df2, aes(x = covariate, y = lower_lim, color = "Lower Limit 2(comparison)"), linewidth = lwd) +
+        geom_line(data = df2, aes(x = covariate, y = upper_lim, color = "Upper Limit 2(comparison)"), linewidth = lwd) +
         
         labs(x = xlab, y = ylab, color = "Limits") +
-        scale_color_manual(values = c("Upper Limit 1(sd = 5)" = rgb(col.upp1[1], col.upp1[2], col.upp1[3]), 
-                                      "Lower Limit 1(sd = 5)" = rgb(col.low1[1], col.low1[2], col.low1[3]),
-                                      "Upper Limit 2" = rgb(col.upp2[1], col.upp2[2], col.upp2[3]),
-                                      "Lower Limit 2" = rgb(col.low2[1], col.low2[2], col.low2[3])),
-                           limits = c("Upper Limit 1(sd = 5)", "Upper Limit 2", "Lower Limit 1(sd = 5)", "Lower Limit 2")) +
+        scale_color_manual(values = c("Upper Limit 1(standard)" = rgb(col.upp1[1], col.upp1[2], col.upp1[3]), 
+                                      "Lower Limit 1(standard)" = rgb(col.low1[1], col.low1[2], col.low1[3]),
+                                      "Upper Limit 2(comparison)" = rgb(col.upp2[1], col.upp2[2], col.upp2[3]),
+                                      "Lower Limit 2(comparison)" = rgb(col.low2[1], col.low2[2], col.low2[3])),
+                           limits = c("Upper Limit 1(standard)", "Upper Limit 2(comparison)", "Lower Limit 1(standard)", "Lower Limit 2(comparison)")) +
         theme_minimal() +
         theme(legend.position = "right")
     
@@ -296,97 +298,97 @@ gg_alist_custom_sd <- function(result.sliding.reflim1, result.sliding.reflim2, u
 #' 
 #' @export
 
-alist_custom_sd <- function(result.sliding.reflim1, result.sliding.reflim2, use.mean=T, xlim=NULL, ylim=NULL, 
-                  xlab=NULL, ylab=NULL, col.low1=c(0,0,1), col.upp1=c(1,0,0), col.low2=c(0,1,0), 
-                  col.upp2=c(0,0,0), lwd=2, transparency=0.8, draw.cis=T, grid.col=NULL, log="", 
-                  cut.at=1){
-  
-  rsr1 <- result.sliding.reflim1
-  rsr2 <- result.sliding.reflim2
-  
-  cova1 <- rsr1$covariate.mean
-  cova2 <- rsr2$covariate.mean
-  if (!use.mean){
-    cova1 <- rsr1$covariate.mean
-    cova2 <- rsr2$covariate.mean
-  }
-  
-  ylim.mod <- ylim
-  if (is.null(ylim)){
-    ylim.mod <- c(min(c(rsr1$lower.lim, rsr2$lower.lim)), max(c(rsr1$upper.lim, rsr2$upper.lim)))
-    if (draw.cis){
-      ylim.mod <- c(min(c(rsr1$ci.lower.lim.l, rsr2$ci.lower.lim.l)), max(c(rsr1$ci.upper.lim.u, rsr2$ci.upper.lim.u)))
-      if (log=="y" | log=="xy"){
-        ylim.mod[1] <- max(c(cut.at, ylim.mod[1]))
-      }
-    }
-  }
-  
-  par(mar = c(3,3,3,8))
-  
-  # rsr1 lower limit curve
-  loli1 <- rsr1$lower.lim
-  if (log=="y" | log=="xy"){
-    loli1 <- sapply(loli1, cut.at.l, l=cut.at)
-  }
-  plot(cova1, loli1, xlim=xlim, ylim=ylim.mod, type="l", lwd=lwd, col=rgb(col.low1[1], col.low1[2], col.low1[3]), 
-       xlab=xlab, ylab=ylab, log=log)
-  
-  # rsr1 upper limit curve
-  points(cova1, rsr1$upper.lim, type="l", lwd=lwd, col=rgb(col.upp1[1], col.upp1[2], col.upp1[3]))
-  
-  # rsr2 lower
-  loli2 <- rsr2$lower.lim
-  if (log=="y" | log=="xy"){
-    loli2 <- sapply(loli2, cut.at.l, l=cut.at)
-  }
-  points(cova2, loli2, type="l", lwd=lwd, col=rgb(col.low2[1], col.low2[2], col.low2[3]))
-  
-  # rsr2 upper
-  points(cova2, rsr2$upper.lim, type="l", lwd=lwd, col=rgb(col.upp2[1], col.upp2[2], col.upp2[3]))
-  
-  if (!is.null(grid.col)){
-    grid(col=grid.col)
-  }
-  
-  # Plotting confidence intervals
-  if (draw.cis){
-    # rsr1 confidence intervals
-    cilloli1 <- rsr1$ci.lower.lim.l
-    ciuloli1 <- rsr1$ci.lower.lim.u
-    if (log=="y" | log=="xy"){
-      cilloli1 <- sapply(cilloli1, cut.at.l, l=cut.at)
-      ciuloli1 <- sapply(ciuloli1, cut.at.l, l=cut.at)
-    }
-    collot1 <- rgb(col.low1[1], col.low1[2], col.low1[3], 1-transparency)
-    colupt1 <- rgb(col.upp1[1], col.upp1[2], col.upp1[3], 1-transparency)
-    polygon(c(cova1, rev(cova1)), c(cilloli1, rev(ciuloli1)), col=collot1, border=collot1)
-    polygon(c(cova1, rev(cova1)), c(rsr1$ci.upper.lim.l, rev(rsr1$ci.upper.lim.u)), col=colupt1, border=colupt1)
-    
-    # rsr2 confidence intervals
-    cilloli2 <- rsr2$ci.lower.lim.l
-    ciuloli2 <- rsr2$ci.lower.lim.u
-    if (log=="y" | log=="xy"){
-      cilloli2 <- sapply(cilloli2, cut.at.l, l=cut.at)
-      ciuloli2 <- sapply(ciuloli2, cut.at.l, l=cut.at)
-    }
-    collot2 <- rgb(col.low2[1], col.low2[2], col.low2[3], 1-transparency)
-    colupt2 <- rgb(col.upp2[1], col.upp2[2], col.upp2[3], 1-transparency)
-    polygon(c(cova2, rev(cova2)), c(cilloli2, rev(ciuloli2)), col=collot2, border=collot2)
-    polygon(c(cova2, rev(cova2)), c(rsr2$ci.upper.lim.l, rev(rsr2$ci.upper.lim.u)), col=colupt2, border=colupt2)
-  }
-  
-  legend("topright",
-         inset = c(-0.2, 0),
-         legend = c("Upper Limit (sd = 5)", "Lower Limit (sd = 5)", "Upper Limit (rs2)", "Lower Limit (rs2)"),
-         col = c(rgb(col.upp1[1], col.upp1[2], col.upp1[3]), rgb(col.low1[1], col.low1[2], col.low1[3]),
-                 rgb(col.upp2[1], col.upp2[2], col.upp2[3]), rgb(col.low2[1], col.low2[2], col.low2[3])),
-         lwd = lwd, 
-         title = "Limits",
-         xpd = TRUE,
-         cex = 0.8,
-         bty = "n") 
-}
+# alist_custom_sd <- function(result.sliding.reflim1, result.sliding.reflim2, use.mean=T, xlim=NULL, ylim=NULL, 
+#                   xlab=NULL, ylab=NULL, col.low1=c(0,0,1), col.upp1=c(1,0,0), col.low2=c(0,1,0), 
+#                   col.upp2=c(0,0,0), lwd=2, transparency=0.8, draw.cis=T, grid.col=NULL, log="", 
+#                   cut.at=1){
+#   
+#   rsr1 <- result.sliding.reflim1
+#   rsr2 <- result.sliding.reflim2
+#   
+#   cova1 <- rsr1$covariate.mean
+#   cova2 <- rsr2$covariate.mean
+#   if (!use.mean){
+#     cova1 <- rsr1$covariate.mean
+#     cova2 <- rsr2$covariate.mean
+#   }
+#   
+#   ylim.mod <- ylim
+#   if (is.null(ylim)){
+#     ylim.mod <- c(min(c(rsr1$lower.lim, rsr2$lower.lim)), max(c(rsr1$upper.lim, rsr2$upper.lim)))
+#     if (draw.cis){
+#       ylim.mod <- c(min(c(rsr1$ci.lower.lim.l, rsr2$ci.lower.lim.l)), max(c(rsr1$ci.upper.lim.u, rsr2$ci.upper.lim.u)))
+#       if (log=="y" | log=="xy"){
+#         ylim.mod[1] <- max(c(cut.at, ylim.mod[1]))
+#       }
+#     }
+#   }
+#   
+#   par(mar = c(3,3,3,8))
+#   
+#   # rsr1 lower limit curve
+#   loli1 <- rsr1$lower.lim
+#   if (log=="y" | log=="xy"){
+#     loli1 <- sapply(loli1, cut.at.l, l=cut.at)
+#   }
+#   plot(cova1, loli1, xlim=xlim, ylim=ylim.mod, type="l", lwd=lwd, col=rgb(col.low1[1], col.low1[2], col.low1[3]), 
+#        xlab=xlab, ylab=ylab, log=log)
+#   
+#   # rsr1 upper limit curve
+#   points(cova1, rsr1$upper.lim, type="l", lwd=lwd, col=rgb(col.upp1[1], col.upp1[2], col.upp1[3]))
+#   
+#   # rsr2 lower
+#   loli2 <- rsr2$lower.lim
+#   if (log=="y" | log=="xy"){
+#     loli2 <- sapply(loli2, cut.at.l, l=cut.at)
+#   }
+#   points(cova2, loli2, type="l", lwd=lwd, col=rgb(col.low2[1], col.low2[2], col.low2[3]))
+#   
+#   # rsr2 upper
+#   points(cova2, rsr2$upper.lim, type="l", lwd=lwd, col=rgb(col.upp2[1], col.upp2[2], col.upp2[3]))
+#   
+#   if (!is.null(grid.col)){
+#     grid(col=grid.col)
+#   }
+#   
+#   # Plotting confidence intervals
+#   if (draw.cis){
+#     # rsr1 confidence intervals
+#     cilloli1 <- rsr1$ci.lower.lim.l
+#     ciuloli1 <- rsr1$ci.lower.lim.u
+#     if (log=="y" | log=="xy"){
+#       cilloli1 <- sapply(cilloli1, cut.at.l, l=cut.at)
+#       ciuloli1 <- sapply(ciuloli1, cut.at.l, l=cut.at)
+#     }
+#     collot1 <- rgb(col.low1[1], col.low1[2], col.low1[3], 1-transparency)
+#     colupt1 <- rgb(col.upp1[1], col.upp1[2], col.upp1[3], 1-transparency)
+#     polygon(c(cova1, rev(cova1)), c(cilloli1, rev(ciuloli1)), col=collot1, border=collot1)
+#     polygon(c(cova1, rev(cova1)), c(rsr1$ci.upper.lim.l, rev(rsr1$ci.upper.lim.u)), col=colupt1, border=colupt1)
+#     
+#     # rsr2 confidence intervals
+#     cilloli2 <- rsr2$ci.lower.lim.l
+#     ciuloli2 <- rsr2$ci.lower.lim.u
+#     if (log=="y" | log=="xy"){
+#       cilloli2 <- sapply(cilloli2, cut.at.l, l=cut.at)
+#       ciuloli2 <- sapply(ciuloli2, cut.at.l, l=cut.at)
+#     }
+#     collot2 <- rgb(col.low2[1], col.low2[2], col.low2[3], 1-transparency)
+#     colupt2 <- rgb(col.upp2[1], col.upp2[2], col.upp2[3], 1-transparency)
+#     polygon(c(cova2, rev(cova2)), c(cilloli2, rev(ciuloli2)), col=collot2, border=collot2)
+#     polygon(c(cova2, rev(cova2)), c(rsr2$ci.upper.lim.l, rev(rsr2$ci.upper.lim.u)), col=colupt2, border=colupt2)
+#   }
+#   
+#   legend("topright",
+#          inset = c(-0.2, 0),
+#          legend = c("Upper Limit (sd = 5)", "Lower Limit (sd = 5)", "Upper Limit (rs2)", "Lower Limit (rs2)"),
+#          col = c(rgb(col.upp1[1], col.upp1[2], col.upp1[3]), rgb(col.low1[1], col.low1[2], col.low1[3]),
+#                  rgb(col.upp2[1], col.upp2[2], col.upp2[3]), rgb(col.low2[1], col.low2[2], col.low2[3])),
+#          lwd = lwd, 
+#          title = "Limits",
+#          xpd = TRUE,
+#          cex = 0.8,
+#          bty = "n") 
+# }
 
 
 
