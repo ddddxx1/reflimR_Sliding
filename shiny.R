@@ -118,16 +118,30 @@ ui <- fluidPage(
         ),
 
         mainPanel(
-            tabsetPanel(
-                tabPanel("Dataset Scatter Plot",
+            tabsetPanel(id = "tabs",
+                tabPanel("Dataset",
                          fluidRow(
                              column(12, plotOutput("uploadedScatterPlot"))
                         )
                 ),
-                tabPanel("Result",
+                tabPanel("Limit",
                          fluidRow(
                              column(12, plotOutput("scatterPlot")),
+                             column(12, div(style = "color: red;", textOutput("errorMessage"))),
                              column(12, withSpinner(plotOutput("scatterPlot2")))
+                         )
+                ),
+                tabPanel("Comparison",
+                         fluidRow(
+                             conditionalPanel(
+                                 condition = "input.tabs == 'Comparison'",
+                                 column(12, div(style = "color: red;", textOutput("falseDistribution"))),
+                                 # column(12, div(style = "color: red;", textOutput("errorMessage"))),
+                                 column(12, numericInput("comparison_sd", "Comparison SD :", value = 6)),
+                                 column(12, actionButton("compare", "Compare")),
+                                 column(12, div(style = "color: red;", textOutput("paError"))),
+                                 column(12, plotOutput("comparisonPlot"))
+                             )
                          )
                 )
             )
@@ -226,6 +240,7 @@ server <- function(input, output, session) {
         } else {
             step_width <- input$step_width
         }
+        
 
         standardabweichung <- input$standardabweichung
         # a <- input$a
@@ -332,6 +347,7 @@ server <- function(input, output, session) {
             }
             
         }, error = function(e) {
+            message("Error: ", e$message)
             return(NULL)
         })
         return(result)
@@ -340,10 +356,19 @@ server <- function(input, output, session) {
     # show Error Messages in UI
     output$errorMessage <- renderText({
         data_info <- data()
-        if (!is.null(data_info$error)) {
-            # return(paste("Error: Error in function w_sliding.reflim.plot")) # error
-          return(paste("Error:", data_info$error))
+        plot_info <- plot_data()
+        
+        # if (!is.null(data_info$error)) {
+        #     # return(paste("Error: Error in function w_sliding.reflim.plot")) # error
+        #   return(paste("Error:", data_info$error))
+        # }
+        # if (!is.null(plot_info$error)) {
+        #     return(paste("Error: ", plot_info$error))
+        # }
+        if (!is.null(data_info$error) || !is.null(plot_info$error)) {
+            return("Error: Disallowed Parameters. Please change!")
         }
+        
         return(NULL)
     })
     
@@ -361,7 +386,7 @@ server <- function(input, output, session) {
              col = "darkblue")
     })
 
-    output$scatterPlot <- renderPlot({
+    output$scatterPlot <- renderPlot({  # first plot
         data_info <- data()
         
         if (!is.null(data_info$error)) {
@@ -384,6 +409,8 @@ server <- function(input, output, session) {
         segment_data <- res[start_row:end_row, ]
         w_values <- as.numeric(segment_data$w)
         
+        total_w <- sum(w_values, na.rm = TRUE)
+        
         # Creating a continuous color gradient with colorRampPalette()
         color_palette <- colorRampPalette(c("blue", "red"))(100)
         w_colors <- color_palette[cut(w_values, breaks = 100, labels = FALSE)]
@@ -405,7 +432,14 @@ server <- function(input, output, session) {
                pch = 16,       
                title = "Weighting",     
                xpd = TRUE,
-               bty = "n")                                 
+               bty = "n")   
+        
+        text(x = par("usr")[2] - 0.3 * diff(par("usr")[1:2]),  
+             y = par("usr")[3] + 0.05 * diff(par("usr")[3:4]),
+             labels = paste("Total w:", round(total_w, 2)), 
+             pos = 4, 
+             col = "black",
+             cex = 1.2)
     })
     
     
@@ -428,6 +462,41 @@ server <- function(input, output, session) {
         # plot(res$t, res$x, xlab = "t", ylab = "x",
         #      main = paste("Scatter"),
         #      pch = 16, col = "blue")
+    })
+    
+    
+    # Comparison
+    output$falseDistribution <- renderText({
+        if (input$verteilung != "truncated_gaussian" && input$verteilung != "gaussian") {
+            return("This distribution does not support comparison!")
+        }
+        return(NULL)
+    })
+    
+    observeEvent(input$compare, {
+        if (input$verteilung == "truncated_gaussian" || input$verteilung == "gaussian") {
+            user_data <- reactive_data()
+            user_x <- user_data$x
+            user_t <- user_data$t
+            
+            output$comparisonPlot <- renderPlot({
+                tryCatch({
+                    res1 <- w_sliding.reflim(user_x, user_t, verteilung = input$verteilung, standard_deviation = input$standardabweichung)
+                    res2 <- w_sliding.reflim(user_x, user_t, verteilung = input$verteilung, standard_deviation = input$comparison_sd)
+                    alist_custom_sd_plot <- gg_alist_custom_sd(res1, res2)
+                    plot(alist_custom_sd_plot)
+                    
+                    output$paError <- renderText({""})
+                }, error = function(e) {
+                    output$paError <- renderText({
+                        return("Error: Disallowed Parameters. Please change!")
+                    })
+                })
+                
+            })
+        } else {
+            showNotification("Comparison only available for Gaussian or Truncated Gaussian distributions", type = "error")
+        }
     })
 }
 
