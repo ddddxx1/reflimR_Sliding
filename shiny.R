@@ -69,6 +69,7 @@ ui <- fluidPage(
                         step = 1,
                         animate = animationOptions(interval = 1000, loop = TRUE)),
 
+            # for truncated_gaussian
             conditionalPanel(
               condition = "input.verteilung == 'truncated_gaussian'",
               numericInput("window_size",
@@ -79,14 +80,16 @@ ui <- fluidPage(
                            value = NULL),
               numericInput("standardabweichung",
                            "Standard deviation:",
-                           value = 5)
+                           value = 5),
+              radioButtons("log_scale", "Log Scale:", choices = c("No" = "no", "Yes" = "yes"), selected = "no")
             ),
             # for gaussian
             conditionalPanel(
                 condition = "input.verteilung == 'gaussian'",
                 numericInput("standardabweichung",
                              "Standard deviation:",
-                             value = 5)
+                             value = 5),
+                radioButtons("log_scale", "Log Scale:", choices = c("No" = "no", "Yes" = "yes"), selected = "no")
             ),
             # for triangular
             conditionalPanel(
@@ -98,8 +101,9 @@ ui <- fluidPage(
                            "Step Width:",
                            value = NULL),
               # numericInput("a", "Parameter a:", value = 0),
-              numericInput("b", "Vertex:", value = 0.5)
+              numericInput("b", "Vertex:", value = 0.5),
               # numericInput("c", "Paramater c:", value = 1)
+              radioButtons("log_scale", "Log Scale:", choices = c("No" = "no", "Yes" = "yes"), selected = "no")
             ),
             # for trapezoidal
             conditionalPanel(
@@ -112,8 +116,9 @@ ui <- fluidPage(
                            value = NULL),
               # numericInput("a_trap", "Parameter a:", value = 0),
               numericInput("b_trap", "Top left angle:", value = 0.3),
-              numericInput("c_trap", "Top right angle:", value = 0.6)
+              numericInput("c_trap", "Top right angle:", value = 0.6),
               # numericInput("d_trap", "Parameter d:", value = 1)
+              radioButtons("log_scale", "Log Scale:", choices = c("No" = "no", "Yes" = "yes"), selected = "no")
             )
         ),
 
@@ -159,17 +164,21 @@ server <- function(input, output, session) {
             updateNumericInput(session, "window_size", value = NULL)
             updateNumericInput(session, "step_width", value = NULL)
             updateNumericInput(session, "standardabweichung", value = 5)
+            updateRadioButtons(session, "log_scale", selected = "no")
         } else if (input$verteilung == "gaussian") {
             updateNumericInput(session, "standardabweichung", value = 5)
+            updateRadioButtons(session, "log_scale", selected = "no")
         } else if (input$verteilung == "triangular") {
             updateNumericInput(session, "window_size", value = NULL)
             updateNumericInput(session, "step_width", value = NULL)
             updateNumericInput(session, "b", value = 0.5)
+            updateRadioButtons(session, "log_scale", selected = "no")
         } else if (input$verteilung == "trapezoidal") {
             updateNumericInput(session, "window_size", value = NULL)
             updateNumericInput(session, "step_width", value = NULL)
             updateNumericInput(session, "b_trap", value = 0.3)
             updateNumericInput(session, "c_trap", value = 0.6)
+            updateRadioButtons(session, "log_scale", selected = "no")
         }
     })
     
@@ -324,23 +333,24 @@ server <- function(input, output, session) {
         # d_trap <- input$d_trap
 
         result <- tryCatch({
+            log_scale_bool <- ifelse(input$log_scale == "yes", TRUE, FALSE)
             if (input$verteilung == "truncated_gaussian") {
-                run(user_x, user_t, verteilung = input$verteilung,
+                run(user_x, user_t, verteilung = input$verteilung, log.scale = log_scale_bool,
                     standardabweichung = standardabweichung,
                     window.size = window_size,
                     step.width = step_width)
             } else if (input$verteilung == "gaussian") {
-                run(user_x, user_t, verteilung = input$verteilung,
+                run(user_x, user_t, verteilung = input$verteilung, log.scale = log_scale_bool,
                     standardabweichung = standardabweichung,
                     window.size = NULL,
                     step.width = NULL)
             } else if (input$verteilung == "triangular") {
-                run(user_x, user_t, verteilung = input$verteilung,
+                run(user_x, user_t, verteilung = input$verteilung, log.scale = log_scale_bool,
                     b = b,
                     window.size = window_size,
                     step.width = step_width)
             } else if (input$verteilung == "trapezoidal") {
-                run(user_x, user_t, verteilung = input$verteilung,
+                run(user_x, user_t, verteilung = input$verteilung, log.scale = log_scale_bool,
                      b = b_trap, c = c_trap,
                     window.size = window_size,
                     step.width = step_width)
@@ -358,16 +368,16 @@ server <- function(input, output, session) {
         data_info <- data()
         plot_info <- plot_data()
         
-        # if (!is.null(data_info$error)) {
-        #     # return(paste("Error: Error in function w_sliding.reflim.plot")) # error
-        #   return(paste("Error:", data_info$error))
-        # }
-        # if (!is.null(plot_info$error)) {
-        #     return(paste("Error: ", plot_info$error))
-        # }
-        if (!is.null(data_info$error) || !is.null(plot_info$error)) {
-            return("Error: Disallowed Parameters. Please change!")
+        if (!is.null(data_info$error)) {
+            # return("Error: Disallowed Parameters. Please change!")
+          return(paste("Error:", data_info$error))
         }
+        if (!is.null(plot_info$error)) {
+            return(paste("Error: ", plot_info$error))
+        }
+        # if (!is.null(data_info$error) || !is.null(plot_info$error)) {
+        #     return("Error: Disallowed Parameters. Please change!")
+        # }
         
         return(NULL)
     })
@@ -387,6 +397,7 @@ server <- function(input, output, session) {
     })
 
     output$scatterPlot <- renderPlot({  # first plot
+        par(mar = c(3,3,3,8))
         data_info <- data()
         
         if (!is.null(data_info$error)) {
@@ -481,9 +492,12 @@ server <- function(input, output, session) {
             
             output$comparisonPlot <- renderPlot({
                 tryCatch({
+                    log_scale_bool <- ifelse(input$log_scale == "yes", TRUE, FALSE)
+                        
+                        
                     res1 <- w_sliding.reflim(user_x, user_t, verteilung = input$verteilung, standard_deviation = input$standardabweichung)
                     res2 <- w_sliding.reflim(user_x, user_t, verteilung = input$verteilung, standard_deviation = input$comparison_sd)
-                    alist_custom_sd_plot <- gg_alist_custom_sd(res1, res2)
+                    alist_custom_sd_plot <- gg_alist_custom_sd(res1, res2, log.scale = log_scale_bool)
                     plot(alist_custom_sd_plot)
                     
                     output$paError <- renderText({""})
