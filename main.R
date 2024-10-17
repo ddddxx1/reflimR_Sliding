@@ -15,7 +15,7 @@
 #' 
 #' @export
 
-run <- function(x, t, verteilung = "truncated_gaussian", standardabweichung = 5, b = NULL, c = NULL, window.size=NULL,step.width=NULL,lognormal=NULL,perc.trunc=2.5,n.min.window=200,n.min=100,apply.rounding=FALSE) {
+run <- function(x, t, verteilung = "truncated_gaussian", log.scale = FALSE, standardabweichung = 5, standardabweichung_compare = NULL, b = NULL, c = NULL, window.size=NULL,step.width=NULL,lognormal=NULL,perc.trunc=2.5,n.min.window=200,n.min=100,apply.rounding=FALSE) {
     par(mar = c(3,3,3,3))
     # if (verteilung == "truncated_gaussian") {
     #     if (standardabweichung == 5) {
@@ -39,14 +39,31 @@ run <- function(x, t, verteilung = "truncated_gaussian", standardabweichung = 5,
     # } else {
     #     res <- w_sliding.reflim(x, t, verteilung = verteilung, a = a, b = b, c = c, d = d, window.size = window.size, step.width = step.width, lognormal = lognormal)
     #     gg_alist(result.sliding.reflim = res)
+    if (is.null(standardabweichung_compare)) {
+        res <- w_sliding.reflim(x, t, verteilung = verteilung, standard_deviation = standardabweichung, b = b, c = c, window.size = window.size, step.width = step.width, lognormal = lognormal)
+        gg_alist(result.sliding.reflim = res, log.scale = log.scale)
+    } else {
+        res1 <- w_sliding.reflim(x, t, verteilung = verteilung, standard_deviation = standardabweichung, b = b, c = c, window.size = window.size, step.width = step.width, lognormal = lognormal)
+        res2 <- w_sliding.reflim(x, t, verteilung = verteilung, standard_deviation = standardabweichung_compare, b = b, c = c, window.size = window.size, step.width = step.width, lognormal = lognormal)
+        gg_alist_custom_sd(result.sliding.reflim1 = res1, result.sliding.reflim2 = res2, log.scale = log.scale)
+    }
     
-    res <- w_sliding.reflim(x, t, verteilung = verteilung,standard_deviation = standardabweichung, b = b, c = c, window.size = window.size, step.width = step.width, lognormal = lognormal)
-    gg_alist(result.sliding.reflim = res)
 }
 
+#' gg_alist
+#' 
+#' @description 
+#' Plot Sliding Reference Limits with Confidence Intervals
+#' 
+#' @param result.sliding.reflim A data frame or list containing the sliding reference limits and their associated confidence intervals
+#' @param log.scale Used to determine if logarithmic scaling of time is required
+#' 
+#' @example 
+#' gg_alist(result.sliding.reflim = res, log.scale = TRUE)
+#' 
+#' @export
 
-
-gg_alist <- function(result.sliding.reflim, use.mean = TRUE, xlim = NULL, ylim = NULL, 
+gg_alist <- function(result.sliding.reflim, log.scale = FALSE, use.mean = TRUE, xlim = NULL, ylim = NULL, 
                      xlab = NULL, ylab = NULL, col.low = c(0, 0, 1), col.upp = c(1, 0, 0), 
                      lwd = 1, transparency = 0.2, draw.cis = TRUE, grid.col = NULL, log = "", 
                      cut.at = 1) {
@@ -95,6 +112,12 @@ gg_alist <- function(result.sliding.reflim, use.mean = TRUE, xlim = NULL, ylim =
         ) +
         labs(color = "Limits") +
         theme(legend.position = "right")
+    
+    # logarithmic scaling
+    if (log.scale) {
+        p <- p + scale_x_log10()
+    }
+    
 
     return(p)
 }
@@ -181,9 +204,23 @@ gg_alist <- function(result.sliding.reflim, use.mean = TRUE, xlim = NULL, ylim =
 
 
 
+#' gg_alist_custom_sd
+#' 
+#' @description 
+#' Plot 2 Sliding Reference Limits with Confidence Intervals, Used to compare results for two different parameters
+#' 
+#' @param result.sliding.reflim1 
+#' A data frame or list containing the sliding reference limits and their associated confidence intervals
+#' 
+#' @param result.sliding.reflim2
+#' Another data frame or list containing the sliding reference limits and their associated confidence intervals
+#'  
+#' @example 
+#' gg_alist_custom_sd(res, res1, log.scale = FALSE)
+#' 
+#' @export
 
-
-gg_alist_custom_sd <- function(result.sliding.reflim1, result.sliding.reflim2, use.mean = TRUE, 
+gg_alist_custom_sd <- function(result.sliding.reflim1, result.sliding.reflim2, log.scale = FALSE, use.mean = TRUE, 
                             xlim = NULL, ylim = NULL, xlab = NULL, ylab = NULL, 
                             col.low1 = c(0, 0, 1), col.upp1 = c(1, 0, 0), col.low2 = c(0, 1, 0), 
                             col.upp2 = c(0, 0, 0), lwd = 1, transparency = 0.2, 
@@ -268,6 +305,10 @@ gg_alist_custom_sd <- function(result.sliding.reflim1, result.sliding.reflim2, u
     # Optionally add grid lines
     if (!is.null(grid.col)) {
         p <- p + theme(panel.grid.major = element_line(color = grid.col))
+    }
+    
+    if (log.scale) {
+        p <- p + scale_x_log10()
     }
     
     return(p)
