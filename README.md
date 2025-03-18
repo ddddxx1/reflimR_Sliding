@@ -13,13 +13,8 @@ The project is a window slider based on the r-language and aims at calculating t
 The program provides various distribution functions, such as Gaussian distribution, triangular distribution, trapezoidal distribution, and more, with freely adjustable parameters. Users can use these distribution functions to weight the data. The program will calculate the weighted data to generate a reference limit chart.
 
 ## Installation
-```bash
-# Clone this repository
-git clone https://github.com/ddddxx1/Praxisprojekt.git
+Download the Zip file from the Shiny App (https://github.com/ddddxx1/reflimR_Sliding). Extract the file. The shiny.R and main.R files are required for the project.
 
-# Go to the project directory
-cd Praxisprojekt
-```
 ## Instructions
 Please put shiny.R and main.R in the same directory, and set the R working directory to this with `setwd("your work directory")`.
 The application will automatically download and call the required libraries.

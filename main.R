@@ -39,7 +39,7 @@ run <- function(x, t, verteilung = "truncated_gaussian", log.scale = FALSE, stan
     # } else {
     #     res <- w_sliding.reflim(x, t, verteilung = verteilung, a = a, b = b, c = c, d = d, window.size = window.size, step.width = step.width, lognormal = lognormal)
     #     gg_alist(result.sliding.reflim = res)
-    if (is.null(standardabweichung_compare)) {
+    if (is.null(standardabweichung_compare)) {  # no comparison
         res <- w_sliding.reflim(x, t, verteilung = verteilung, standard_deviation = standardabweichung, b = b, c = c, window.size = window.size, step.width = step.width, lognormal = lognormal)
         gg_alist(result.sliding.reflim = res, log.scale = log.scale)
     } else {

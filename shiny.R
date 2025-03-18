@@ -101,7 +101,7 @@ ui <- fluidPage(
                            "Step Width:",
                            value = NULL),
               # numericInput("a", "Parameter a:", value = 0),
-              numericInput("b", "Vertex:", value = 0.5),
+              numericInput("b", "Vertex (0,1]:", value = 0.5),
               # numericInput("c", "Paramater c:", value = 1)
               radioButtons("log_scale", "Log Scale:", choices = c("No" = "no", "Yes" = "yes"), selected = "no")
             ),
@@ -363,14 +363,14 @@ server <- function(input, output, session) {
         return(result)
     })
 
-    # show Error Messages in UI
+    # show Error Messages in UI (in Limit)
     output$errorMessage <- renderText({
         data_info <- data()
         plot_info <- plot_data()
         
         if (!is.null(data_info$error)) {
-            # return("Error: Disallowed Parameters. Please change!")
-          return(paste("Error:", data_info$error))
+            return("Error: Disallowed Parameters. Please change!")
+          # return(paste("Error:", data_info$error))
         }
         if (!is.null(plot_info$error)) {
             return(paste("Error: ", plot_info$error))
@@ -476,7 +476,7 @@ server <- function(input, output, session) {
     })
     
     
-    # Comparison
+    # whether supported comparison types
     output$falseDistribution <- renderText({
         if (input$verteilung != "truncated_gaussian" && input$verteilung != "gaussian") {
             return("This distribution does not support comparison!")
@@ -484,6 +484,7 @@ server <- function(input, output, session) {
         return(NULL)
     })
     
+    # Calculation/Drawing/ErrorReporting in Comparison
     observeEvent(input$compare, {
         if (input$verteilung == "truncated_gaussian" || input$verteilung == "gaussian") {
             user_data <- reactive_data()
