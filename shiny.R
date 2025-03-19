@@ -57,6 +57,7 @@ ui <- fluidPage(
                         selected = "truncated_gaussian"),
             fileInput("datafile", "Upload CSV File", accept = c("text/csv", "text/comma-separated-values,text/plain", ".csv")),
             actionButton('reset', 'Reset Input', icon = icon("trash")),
+            selectInput("separator", "Select Separator:", choices = c("Comma(,)" = ",", "Semicolon(;)" = ";"), selected = ";"),
             
             selectInput("xcol", "Select X Column", choices = NULL),
             selectInput("tcol", "Select T Column", choices = NULL),
@@ -194,20 +195,20 @@ server <- function(input, output, session) {
         if (is.null(values$upload_state)) {
             return(list(x = x, t = t))
         } else if (values$upload_state == 'uploaded') {
-            return(read.csv(input$datafile$datapath))
+            return(read.csv(input$datafile$datapath, sep = input$separator))
         } else if (values$upload_state == 'reset') {
             return(list(x = x, t = t))
         }
     })
     
-    uploaded_data <- reactive({
-      if (is.null(input$datafile)) {
-        return(NULL)
-      } else {
-        uploaded <- read.csv(input$datafile$datapath)
-        return(uploaded)
-      }
-    })
+    # uploaded_data <- reactive({
+    #   if (is.null(input$datafile)) {
+    #     return(NULL)
+    #   } else {
+    #     uploaded <- read.csv(input$datafile$datapath)
+    #     return(uploaded)
+    #   }
+    # })
 
     observe({
       # file_data <- uploaded_data()
