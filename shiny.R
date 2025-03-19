@@ -102,7 +102,7 @@ ui <- fluidPage(
                            "Step Width:",
                            value = NULL),
               # numericInput("a", "Parameter a:", value = 0),
-              numericInput("b", "Vertex (0,1]:", value = 0.5),
+              numericInput("b", "Vertex:", value = 0.5),
               # numericInput("c", "Paramater c:", value = 1)
               radioButtons("log_scale", "Log Scale:", choices = c("No" = "no", "Yes" = "yes"), selected = "no")
             ),
@@ -116,8 +116,8 @@ ui <- fluidPage(
                            "Step Width:",
                            value = NULL),
               # numericInput("a_trap", "Parameter a:", value = 0),
-              numericInput("b_trap", "Top left angle:", value = 0.3),
-              numericInput("c_trap", "Top right angle:", value = 0.6),
+              numericInput("b_trap", "Top left vertex:", value = 0.3),
+              numericInput("c_trap", "Top right vertex:", value = 0.6),
               # numericInput("d_trap", "Parameter d:", value = 1)
               radioButtons("log_scale", "Log Scale:", choices = c("No" = "no", "Yes" = "yes"), selected = "no")
             )
@@ -174,12 +174,16 @@ server <- function(input, output, session) {
             updateNumericInput(session, "step_width", value = NULL)
             updateNumericInput(session, "b", value = 0.5)
             updateRadioButtons(session, "log_scale", selected = "no")
+            showNotification("The vertex is the peak position of the triangular distribution function, with a value range of (0, 1]. 
+                             When the input value is 0.5, the triangle is an isosceles triangle.",duration = 10, type = "message")
         } else if (input$verteilung == "trapezoidal") {
             updateNumericInput(session, "window_size", value = NULL)
             updateNumericInput(session, "step_width", value = NULL)
             updateNumericInput(session, "b_trap", value = 0.3)
             updateNumericInput(session, "c_trap", value = 0.6)
             updateRadioButtons(session, "log_scale", selected = "no")
+            showNotification("The top left and top right vertices of the trapezoidal distribution have a value range of (0, 1]. 
+                             When 0.3 and 0.6 are entered respectively, the trapezoid is an isosceles trapezoid.",duration = 10, type = "message")
         }
     })
     
