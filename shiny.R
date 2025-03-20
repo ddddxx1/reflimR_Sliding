@@ -57,6 +57,7 @@ ui <- fluidPage(
                         selected = "truncated_gaussian"),
             fileInput("datafile", "Upload CSV File", accept = c("text/csv", "text/comma-separated-values,text/plain", ".csv")),
             actionButton('reset', 'Reset Input', icon = icon("trash")),
+            selectInput("separator", "Select Separator:", choices = c("Comma(,)" = ",", "Semicolon(;)" = ";"), selected = ";"),
             
             selectInput("xcol", "Select X Column", choices = NULL),
             selectInput("tcol", "Select T Column", choices = NULL),
@@ -115,8 +116,8 @@ ui <- fluidPage(
                            "Step Width:",
                            value = NULL),
               # numericInput("a_trap", "Parameter a:", value = 0),
-              numericInput("b_trap", "Top left angle:", value = 0.3),
-              numericInput("c_trap", "Top right angle:", value = 0.6),
+              numericInput("b_trap", "Top left vertex:", value = 0.3),
+              numericInput("c_trap", "Top right vertex:", value = 0.6),
               # numericInput("d_trap", "Parameter d:", value = 1)
               radioButtons("log_scale", "Log Scale:", choices = c("No" = "no", "Yes" = "yes"), selected = "no")
             )
@@ -173,12 +174,16 @@ server <- function(input, output, session) {
             updateNumericInput(session, "step_width", value = NULL)
             updateNumericInput(session, "b", value = 0.5)
             updateRadioButtons(session, "log_scale", selected = "no")
+            showNotification("The vertex is the peak position of the triangular distribution function, with a value range of (0, 1]. 
+                             When the input value is 0.5, the triangle is an isosceles triangle.",duration = 10, type = "message")
         } else if (input$verteilung == "trapezoidal") {
             updateNumericInput(session, "window_size", value = NULL)
             updateNumericInput(session, "step_width", value = NULL)
             updateNumericInput(session, "b_trap", value = 0.3)
             updateNumericInput(session, "c_trap", value = 0.6)
             updateRadioButtons(session, "log_scale", selected = "no")
+            showNotification("The top left and top right vertices of the trapezoidal distribution have a value range of (0, 1]. 
+                             When 0.3 and 0.6 are entered respectively, the trapezoid is an isosceles trapezoid.",duration = 10, type = "message")
         }
     })
     
@@ -194,20 +199,20 @@ server <- function(input, output, session) {
         if (is.null(values$upload_state)) {
             return(list(x = x, t = t))
         } else if (values$upload_state == 'uploaded') {
-            return(read.csv(input$datafile$datapath))
+            return(read.csv(input$datafile$datapath, sep = input$separator))
         } else if (values$upload_state == 'reset') {
             return(list(x = x, t = t))
         }
     })
     
-    uploaded_data <- reactive({
-      if (is.null(input$datafile)) {
-        return(NULL)
-      } else {
-        uploaded <- read.csv(input$datafile$datapath)
-        return(uploaded)
-      }
-    })
+    # uploaded_data <- reactive({
+    #   if (is.null(input$datafile)) {
+    #     return(NULL)
+    #   } else {
+    #     uploaded <- read.csv(input$datafile$datapath)
+    #     return(uploaded)
+    #   }
+    # })
 
     observe({
       # file_data <- uploaded_data()
@@ -363,14 +368,14 @@ server <- function(input, output, session) {
         return(result)
     })
 
-    # show Error Messages in UI
+    # show Error Messages in UI (in Limit)
     output$errorMessage <- renderText({
         data_info <- data()
         plot_info <- plot_data()
         
         if (!is.null(data_info$error)) {
-            # return("Error: Disallowed Parameters. Please change!")
-          return(paste("Error:", data_info$error))
+            return("Error: Disallowed Parameters. Please change!")
+          # return(paste("Error:", data_info$error))
         }
         if (!is.null(plot_info$error)) {
             return(paste("Error: ", plot_info$error))
@@ -476,7 +481,7 @@ server <- function(input, output, session) {
     })
     
     
-    # Comparison
+    # whether supported comparison types
     output$falseDistribution <- renderText({
         if (input$verteilung != "truncated_gaussian" && input$verteilung != "gaussian") {
             return("This distribution does not support comparison!")
@@ -484,8 +489,10 @@ server <- function(input, output, session) {
         return(NULL)
     })
     
+    # Calculation/Drawing/ErrorReporting in Comparison
     observeEvent(input$compare, {
         if (input$verteilung == "truncated_gaussian" || input$verteilung == "gaussian") {
+            print("begin to compare")
             user_data <- reactive_data()
             user_x <- user_data$x
             user_t <- user_data$t
@@ -493,10 +500,10 @@ server <- function(input, output, session) {
             output$comparisonPlot <- renderPlot({
                 tryCatch({
                     log_scale_bool <- ifelse(input$log_scale == "yes", TRUE, FALSE)
+                    print(paste("log_scale_bool:", log_scale_bool))
                         
-                        
-                    res1 <- w_sliding.reflim(user_x, user_t, verteilung = input$verteilung, standard_deviation = input$standardabweichung)
-                    res2 <- w_sliding.reflim(user_x, user_t, verteilung = input$verteilung, standard_deviation = input$comparison_sd)
+                    res1 <- w_sliding.reflim(user_x, user_t, verteilung = input$verteilung, standard_deviation = input$standardabweichung, plot.weight = FALSE)  # Error: Disallowed Parameters. Please change!
+                    res2 <- w_sliding.reflim(user_x, user_t, verteilung = input$verteilung, standard_deviation = input$comparison_sd, plot.weight = FALSE)
                     alist_custom_sd_plot <- gg_alist_custom_sd(res1, res2, log.scale = log_scale_bool)
                     plot(alist_custom_sd_plot)
                     

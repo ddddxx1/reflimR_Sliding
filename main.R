@@ -39,7 +39,7 @@ run <- function(x, t, verteilung = "truncated_gaussian", log.scale = FALSE, stan
     # } else {
     #     res <- w_sliding.reflim(x, t, verteilung = verteilung, a = a, b = b, c = c, d = d, window.size = window.size, step.width = step.width, lognormal = lognormal)
     #     gg_alist(result.sliding.reflim = res)
-    if (is.null(standardabweichung_compare)) {
+    if (is.null(standardabweichung_compare)) {  # no comparison
         res <- w_sliding.reflim(x, t, verteilung = verteilung, standard_deviation = standardabweichung, b = b, c = c, window.size = window.size, step.width = step.width, lognormal = lognormal)
         gg_alist(result.sliding.reflim = res, log.scale = log.scale)
     } else {
@@ -541,9 +541,11 @@ makeWeightFunction <- function(distribution = "truncated_gaussian", ...) {
 #' (truncated Gaussian, triangular, trapezoidal) to the covariate data. It is designed to handle missing values, 
 #' perform ordered computations, and calculate weighted reference limits for each windowed interval.
 #' 
+#' @param plot.weight [logical] If TRUE, the weight function is plotted
+#' 
 #' @export
 
-w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", standard_deviation = 5, a = NULL, b = NULL, c = NULL, d = NULL, window.size=NULL,step.width=NULL,lognormal=NULL,perc.trunc=2.5,n.min.window=200,n.min=100,apply.rounding=FALSE)
+w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", standard_deviation = 5, a = NULL, b = NULL, c = NULL, d = NULL, window.size=NULL,step.width=NULL,lognormal=NULL,perc.trunc=2.5,n.min.window=200,n.min=100,apply.rounding=FALSE, plot.weight=TRUE)
 {
     print(paste("sd = ", standard_deviation))
     
@@ -614,7 +616,8 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
             covariate.median[i] <- median(covcomp)
             covariate.n[i] <- length(covcomp)  # Count of all covariates
             
-            plot(covcomp, www, type = "l", col = "blue", lwd = 2, main = paste("Gaussian Weight Function at i =", i))
+            if (plot.weight)
+            plot(covcomp, www, type = "l", col = "blue", lwd = 2, main = paste("Gaussian Weight Function at i =", i))   # Plot the weight function
             points(covcomp, www, col = "red")
             www_sum <- sum(www)
             text(x = mean(covcomp), y = mean(www),
@@ -643,7 +646,7 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
                         
                         a.value <- min(interval_cov)
                         c.value <- max(interval_cov)
-                        b.value <- (c.value - a.value) * b + a.value
+                        b.value <- (c.value - a.value) * b + a.value  # b is the vertex of the triangle
 
                         w_function <- makeWeightFunction(verteilung, a = a.value, b = b.value, c = c.value)
                         www <- w_function(interval_cov)
@@ -654,13 +657,14 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
                         
                         a.value <- min(interval_cov)
                         d.value <- max(interval_cov)
-                        b.value <- (d.value - a.value) * b + a.value
-                        c.value <- (d.value - a.value) * c + a.value
+                        b.value <- (d.value - a.value) * b + a.value  # b is the left horizontal point
+                        c.value <- (d.value - a.value) * c + a.value  # c is the right horizontal point
 
                         w_function <- makeWeightFunction(distribution = verteilung, a = a.value, b = b.value, c = c.value, d = d.value)
                         www <- w_function(interval_cov)
                     }
                     
+                    if (plot.weight)
                     plot(interval_cov, www, type = "l", col = "blue", lwd = 2, main = "www VS interval_cov")
                     points(interval_cov, www, col = "red")
                     www_sum <- sum(www)
@@ -742,6 +746,7 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
                         www <- w_function(interval_cov)
                     }
                     
+                    if (plot.weight)
                     plot(interval_cov, www, type = "l", col = "blue", lwd = 2, main = "www VS interval_cov")
                     points(interval_cov, www, col = "red")
                     www_sum <- sum(www)
