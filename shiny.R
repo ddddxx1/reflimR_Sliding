@@ -492,6 +492,7 @@ server <- function(input, output, session) {
     # Calculation/Drawing/ErrorReporting in Comparison
     observeEvent(input$compare, {
         if (input$verteilung == "truncated_gaussian" || input$verteilung == "gaussian") {
+            print("begin to compare")
             user_data <- reactive_data()
             user_x <- user_data$x
             user_t <- user_data$t
@@ -499,10 +500,10 @@ server <- function(input, output, session) {
             output$comparisonPlot <- renderPlot({
                 tryCatch({
                     log_scale_bool <- ifelse(input$log_scale == "yes", TRUE, FALSE)
+                    print(paste("log_scale_bool:", log_scale_bool))
                         
-                        
-                    res1 <- w_sliding.reflim(user_x, user_t, verteilung = input$verteilung, standard_deviation = input$standardabweichung)
-                    res2 <- w_sliding.reflim(user_x, user_t, verteilung = input$verteilung, standard_deviation = input$comparison_sd)
+                    res1 <- w_sliding.reflim(user_x, user_t, verteilung = input$verteilung, standard_deviation = input$standardabweichung, plot.weight = FALSE)  # Error: Disallowed Parameters. Please change!
+                    res2 <- w_sliding.reflim(user_x, user_t, verteilung = input$verteilung, standard_deviation = input$comparison_sd, plot.weight = FALSE)
                     alist_custom_sd_plot <- gg_alist_custom_sd(res1, res2, log.scale = log_scale_bool)
                     plot(alist_custom_sd_plot)
                     
