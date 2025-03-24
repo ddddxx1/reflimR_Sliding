@@ -1,4 +1,4 @@
-#shiny-improvement
+#debug-CALIPER
 
 #' run
 #' 
@@ -16,6 +16,7 @@
 #' @export
 
 run <- function(x, t, verteilung = "truncated_gaussian", log.scale = FALSE, standardabweichung = 5, standardabweichung_compare = NULL, b = NULL, c = NULL, window.size=NULL,step.width=NULL,lognormal=NULL,perc.trunc=2.5,n.min.window=200,n.min=100,apply.rounding=FALSE) {
+    print("caliper error finding (run function begin)")
     par(mar = c(3,3,3,3))
     # if (verteilung == "truncated_gaussian") {
     #     if (standardabweichung == 5) {
@@ -40,9 +41,12 @@ run <- function(x, t, verteilung = "truncated_gaussian", log.scale = FALSE, stan
     #     res <- w_sliding.reflim(x, t, verteilung = verteilung, a = a, b = b, c = c, d = d, window.size = window.size, step.width = step.width, lognormal = lognormal)
     #     gg_alist(result.sliding.reflim = res)
     if (is.null(standardabweichung_compare)) {  # no comparison
-        res <- w_sliding.reflim(x, t, verteilung = verteilung, standard_deviation = standardabweichung, b = b, c = c, window.size = window.size, step.width = step.width, lognormal = lognormal)
+        print("no need comparison")
+        res <- w_sliding.reflim(x, t, verteilung = verteilung, standard_deviation = standardabweichung, b = b, c = c, window.size = window.size, step.width = step.width, lognormal = lognormal)    # caliper error
+        print("caliper error finding (after res)")
         gg_alist(result.sliding.reflim = res, log.scale = log.scale)
     } else {
+        print("need comparison")
         res1 <- w_sliding.reflim(x, t, verteilung = verteilung, standard_deviation = standardabweichung, b = b, c = c, window.size = window.size, step.width = step.width, lognormal = lognormal)
         res2 <- w_sliding.reflim(x, t, verteilung = verteilung, standard_deviation = standardabweichung_compare, b = b, c = c, window.size = window.size, step.width = step.width, lognormal = lognormal)
         gg_alist_custom_sd(result.sliding.reflim1 = res1, result.sliding.reflim2 = res2, log.scale = log.scale)
@@ -541,6 +545,9 @@ makeWeightFunction <- function(distribution = "truncated_gaussian", ...) {
 #' (truncated Gaussian, triangular, trapezoidal) to the covariate data. It is designed to handle missing values, 
 #' perform ordered computations, and calculate weighted reference limits for each windowed interval.
 #' 
+#' 
+#' @param x [numeric] The data vector
+#' @param covariate [numeric] The covariate vector (time)
 #' @param plot.weight [logical] If TRUE, the weight function is plotted
 #' 
 #' @export
@@ -549,6 +556,7 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
 {
     print(paste("sd = ", standard_deviation))
     
+    # set x and covcomp not null
     is.nona <- !is.na(x) & !is.na(covariate)
     xx <- x[is.nona]
     covcomp <- covariate[is.nona]
@@ -665,7 +673,7 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
                     }
                     
                     if (plot.weight)
-                    plot(interval_cov, www, type = "l", col = "blue", lwd = 2, main = "www VS interval_cov")
+                    plot(interval_cov, www, type = "l", col = "blue", lwd = 2, main = "weight VS interval_cov")
                     points(interval_cov, www, col = "red")
                     www_sum <- sum(www)
                     text(x = mean(interval_cov), y = mean(www), 
@@ -708,11 +716,12 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
                 window.right <- window.right + step.width
             }
         } else {
-            print("window.size or step.width is null")
+            print("window.size or step.width is null")  # CALIPER warning
             ind <- 1
             indl <- 1
             indr <- 2
             while(indr <= length(cov.unique)) {
+                print("caliper error finding (in while loop)")
                 is.in.interval <- covcomp >= cov.unique[indl] & covcomp < cov.unique[indr]
                 
                 if (sum(is.in.interval) >= n.min.window) {
@@ -722,8 +731,11 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
                     xxx <- xx[is.in.interval]
 
                     if (verteilung == "truncated_gaussian") {
+                        print("caliper error finding (use truncated_gaussian)")
                         w_function <- makeWeightFunction(verteilung, sigma = standard_deviation)
+                        print("caliper error finding (after makeWeightFunction)")
                         www <- w_function(interval_cov, mean = (min(interval_cov) + max(interval_cov)) / 2)
+                        print("caliper error finding (after w_function)")
                     } else if (verteilung == "triangular") {
                         b <- if (is.null(b)) 0.5 else b
                         
@@ -755,7 +767,9 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
                          col = "darkgreen", cex = 1.5, font = 2)
                     sum.www[ind] <- www_sum
 
-                        res.reflim <- w_reflim(xxx, www, n.min = n.min, apply.rounding = apply.rounding, lognormal = lognormal, plot.all = FALSE)
+                    print("caliper error finding (before w_reflim)")
+                        res.reflim <- w_reflim(xxx, www, n.min = n.min, apply.rounding = apply.rounding, lognormal = lognormal, plot.all = FALSE)   # caliper error: missing value where TRUE/FALSE needed
+                        print("caliper error finding (after w_reflim)")
                         
                         lower.lim[ind] <- res.reflim$limits[1]
                         upper.lim[ind] <- res.reflim$limits[2]
@@ -808,6 +822,7 @@ w_reflim <- function (x, x_weight, lognormal = NULL, targets = NULL, perc.trunc 
              n.min = 200, apply.rounding = TRUE, plot.it = FALSE, plot.all = FALSE, 
              print.n = TRUE, main = "reference limits", xlab = "x") 
 {
+    print("caliper error finding (w_reflim begin)")
     # reflimR für conf_int95
     if (require("reflimR")) {
         library(reflimR)
@@ -885,23 +900,30 @@ w_reflim <- function (x, x_weight, lognormal = NULL, targets = NULL, perc.trunc 
     }
     if (n < n.min) {
         warning(paste("n = ", n, "where a minimum of ", n.min, 
-                      "is required. n.min has been set to 40 at a potential loss of accuracy."))
+                      "is required. n.min has been set to 40 at a potential loss of accuracy."))    # CALIPER warning 1
         result$stats[3] <- n
         result$remarks <- "Attention: low.n"
         n.min <- 40
     }
+    print("caliper error finding (before adjust_digits)")
     digits <- adjust_digits(median(x_clean))$digits
+    print("caliper error finding (after adjust_digits)")
     if (is.null(lognormal)) {
+        print("lognormal is null")
         plot.logtype <- TRUE
-        lognormal <- w_lognorm(x_clean, ww_clean)$lognormal
+        print("caliper error finding (before w_lognorm)")
+        lognormal <- w_lognorm(x_clean, ww_clean)$lognormal # caliper error: missing value where TRUE/FALSE needed
+        print("caliper error finding (after w_lognorm)")
     } else {
         plot.logtype <- FALSE
     }
     
 
+    print("caliper error finding (before w_iboxplot)")
     res.lognorm <- w_lognorm(x_clean, ww_clean, plot.it = FALSE)
     res.trunc <- w_iboxplot(x_clean, ww_clean, lognormal = lognormal, perc.trunc = perc.trunc,
                             apply.rounding = apply.rounding, plot.it = FALSE)
+    print("caliper error finding (after w_iboxplot)")
     
     n.trunc <- length(res.trunc$trunc)
     if (n.trunc < 40) {
@@ -920,16 +942,23 @@ w_reflim <- function (x, x_weight, lognormal = NULL, targets = NULL, perc.trunc 
         n.min <- 40
     }
 
+    print("caliper error finding (before w_truncated_qqplot)")
     res.qq <- w_truncated_qqplot(res.trunc$trunc, res.trunc$w_trunc, lognormal = lognormal,
                                  perc.trunc = perc.trunc, n.min = n.min, apply.rounding = apply.rounding,
                                  plot.it = FALSE)$result
+    print(res.qq)
+    # print(paste("res.qq[1] = ", res.qq[1], "res.qq[2] = ", res.qq[2], "res.qq[3] = ", res.qq[3], "res.qq[4] = ", res.qq[4]))    # caliper error: upper.limit must be higher than lower.limit.   res.qq[3] = res.qq[4]
+    print("caliper error finding (after w_truncated_qqplot)")
     res.ci <- conf_int95(n = n, lower.limit = as.numeric(res.qq[3]),
                          upper.limit = as.numeric(res.qq[4]), lognormal = lognormal,
-                         apply.rounding = apply.rounding)
+                         apply.rounding = apply.rounding)   # caliper error: upper.limit must be higher than lower.limit.   res.qq[3] = res.qq[4]
+    print("caliper error finding (after conf_int95)")
 
     if (res.qq[3] > 0) {
+        print("caliper error finding (before permissible_uncertainty)")
         res.pu <- permissible_uncertainty(lower.limit = as.numeric(res.qq[3]),
                                           upper.limit = as.numeric(res.qq[4]), apply.rounding = apply.rounding)
+        print("caliper error finding (after permissible_uncertainty)")
     } else {
         warning("Estimated lower limit <- 0. No tolerance limits calculated. No graphics produced.")
         res.pu <- rep(NA, 4)
@@ -1011,6 +1040,11 @@ w_reflim <- function (x, x_weight, lognormal = NULL, targets = NULL, perc.trunc 
 #' @export
 
 w_bowley <- function(x, x_weight) {
+    print("caliper error finding (w_bowley begin)")
+    print("summary x:")
+    print(summary(x))
+    print("summary x_weight:")
+    print(summary(x_weight))
   # Hmisc für wtd.quantile
   if (require("Hmisc")) {
     library(Hmisc)
@@ -1019,7 +1053,8 @@ w_bowley <- function(x, x_weight) {
     library(Hmisc)
   }
   w_quantiles <- wtd.quantile(x, x_weight, probs = c(0.25, 0.5, 0.75))
-  return((w_quantiles[3] + w_quantiles[1] - 2* w_quantiles[2])/(w_quantiles[3]-w_quantiles[2])) # ERROR: quan[3] = quan[2]
+  print(paste("w_quantiles[1] = ", w_quantiles[1], "w_quantiles[2] = ", w_quantiles[2], "w_quantiles[3] = ", w_quantiles[3]))
+  return((w_quantiles[3] + w_quantiles[1] - 2* w_quantiles[2])/(w_quantiles[3]-w_quantiles[2])) # ERROR: quan[3] = quan[2]  caliper  (missing value where TRUE/FALSE needed)
 }
 
 
@@ -1038,6 +1073,7 @@ w_IQR <- function(x, x_weight) {
 
 w_lognorm <- function(x, x_weight, cutoff = 0.05, digits = 3, plot.it = FALSE, xlab = "x",
                       plot.logtype = TRUE, main = "W_Bowley skewness") {
+    print("caliper error finding (w_lognorm begin)")
   if (!is.numeric(x)) {
     stop("x must be numeric.")
   }
@@ -1050,6 +1086,7 @@ w_lognorm <- function(x, x_weight, cutoff = 0.05, digits = 3, plot.it = FALSE, x
     bs <- rep(NA, 2)
     bs[1] <- w_bowley(x, x_weight)
     bs[2] <- w_bowley(log(x), x_weight)
+    print(paste("bs[1] = ", bs[1], "bs[2] = ", bs[2]))  # bs[1] =  NaN bs[2] =  NaN
   
   # delta can determine whether the logarithmic transformation significantly reduces the skewness of the data
   if (bs[1] < 0) {

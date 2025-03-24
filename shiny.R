@@ -1,4 +1,4 @@
-#shiny-improvement
+#debug-CALIPER
 setwd("D:\\project\\R\\Praxisprojekt")
 source("main.R")
 # source("D:/AppData/OneDrive - lelelelele/Studium/Bachelor/WiSe24-25/Praxisprojekt/code/main.R")
@@ -158,6 +158,10 @@ ui <- fluidPage(
 
 server <- function(input, output, session) {
     values <- reactiveValues(upload_state = NULL)
+    observe({
+        req(input$verteilung)  # input$verteilung not null
+        print(paste("Setting distribution:", input$verteilung, "..."))
+    })
     
     # Reset inputs when switching the distribution
     observeEvent(input$verteilung, {
@@ -189,10 +193,12 @@ server <- function(input, output, session) {
     
     observeEvent(input$datafile, {
         values$upload_state <- 'uploaded'
+        print(paste("Uploaded file:", input$datafile[1]))
     })
     
     observeEvent(input$reset, {
         values$upload_state <- 'reset'
+        print(paste("Reseted file:", input$datafile[1]))
     })
     
     dataset_input <- reactive({
@@ -340,10 +346,12 @@ server <- function(input, output, session) {
         result <- tryCatch({
             log_scale_bool <- ifelse(input$log_scale == "yes", TRUE, FALSE)
             if (input$verteilung == "truncated_gaussian") {
+                print("caliper error finding (run)")    
                 run(user_x, user_t, verteilung = input$verteilung, log.scale = log_scale_bool,
                     standardabweichung = standardabweichung,
                     window.size = window_size,
-                    step.width = step_width)
+                    step.width = step_width)    # caliper error: missing value where TRUE/FALSE needed
+                print("caliper error finding (run end)")
             } else if (input$verteilung == "gaussian") {
                 run(user_x, user_t, verteilung = input$verteilung, log.scale = log_scale_bool,
                     standardabweichung = standardabweichung,
