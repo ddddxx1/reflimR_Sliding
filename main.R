@@ -918,9 +918,9 @@ w_reflim <- function (x, x_weight, lognormal = NULL, targets = NULL, perc.trunc 
         plot.logtype <- FALSE
     }
     
-
     print("caliper error finding (before w_iboxplot)")
     res.lognorm <- w_lognorm(x_clean, ww_clean, plot.it = FALSE)
+    print("caliper error finding (after w_lognorm and before w_iboxplot)")
     res.trunc <- w_iboxplot(x_clean, ww_clean, lognormal = lognormal, perc.trunc = perc.trunc,
                             apply.rounding = apply.rounding, plot.it = FALSE)
     print("caliper error finding (after w_iboxplot)")
@@ -1052,9 +1052,21 @@ w_bowley <- function(x, x_weight) {
     install.packages("Hmisc")
     library(Hmisc)
   }
+
+  if (all(x_weight == 0, na.rm = TRUE)) {
+    warning("All weights are zero. Using equal weights instead.")
+    x_weight <- rep(1, length(x))
+  }
+
   w_quantiles <- wtd.quantile(x, x_weight, probs = c(0.25, 0.5, 0.75))
   print(paste("w_quantiles[1] = ", w_quantiles[1], "w_quantiles[2] = ", w_quantiles[2], "w_quantiles[3] = ", w_quantiles[3]))
-  return((w_quantiles[3] + w_quantiles[1] - 2* w_quantiles[2])/(w_quantiles[3]-w_quantiles[2])) # ERROR: quan[3] = quan[2]  caliper  (missing value where TRUE/FALSE needed)
+  
+  if (abs(w_quantiles[3] - w_quantiles[2]) < .Machine$double.eps) {
+      print("caliper error finding (w_bowley end and return 0)")
+      return(0)
+  }
+  print("caliper error finding (w_bowley end and return)")
+  return((w_quantiles[3] + w_quantiles[1] - 2* w_quantiles[2])/(w_quantiles[3]-w_quantiles[2])) # ERROR: quan[3] = quan[2]
 }
 
 
@@ -1139,6 +1151,7 @@ w_lognorm <- function(x, x_weight, cutoff = 0.05, digits = 3, plot.it = FALSE, x
     }
   }
   
+  print("caliper error finding (w_lognorm end)")
   return(list(lognormal = lognormal, BowleySkewness = c(normal = bs[1], 
                                                    lognormal = bs[2],
                                                    delta = bs[1] - bs[2])))
@@ -1162,6 +1175,9 @@ w_lognorm <- function(x, x_weight, cutoff = 0.05, digits = 3, plot.it = FALSE, x
 w_iboxplot <- function(x, x_weight, lognormal = NULL, perc.trunc = 2.5,
                        apply.rounding = TRUE, plot.it = FALSE, main = "w_iBoxplot", xlab = "x") {
   # reflimR für adjust_digits
+  print("caliper error finding (w_iboxplot begin)")
+  print(summary(x))
+  print(summary(x_weight))
   if (require("reflimR")) {
     library(reflimR)
   } else {
@@ -1174,6 +1190,11 @@ w_iboxplot <- function(x, x_weight, lognormal = NULL, perc.trunc = 2.5,
   } else {
     install.packages("Hmisc")
     library(Hmisc)
+  }
+
+  if (all(x_weight == 0, na.rm = TRUE) || all(is.na(x_weight))) {
+    warning("All weights are zero or NA. Using equal weights instead.")
+    x_weight <- rep(1, length(x))
   }
   
   na_indices <- is.na(x)
