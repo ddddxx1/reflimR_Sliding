@@ -8,14 +8,14 @@
 #' 
 #' @param x [numeric]
 #' @param t [integer]
-#' @param a,b,c,d [numeric] Used to control the shape of the triangular and trapezoidal distribution function, taking values between 0 and 1
+#' @param vertex1,vertex2 [numeric] Used to control the shape of the triangular and trapezoidal distribution function, taking values between 0 and 1
 #' 
 #' @example 
 #' run(x, t, verteilung = "truncated_gaussian")
 #' 
 #' @export
 
-run <- function(x, t, verteilung = "truncated_gaussian", log.scale = FALSE, standardabweichung = 5, standardabweichung_compare = NULL, b = NULL, c = NULL, window.size=NULL,step.width=NULL,lognormal=NULL,perc.trunc=2.5,n.min.window=200,n.min=100,apply.rounding=FALSE) {
+run <- function(x, t, verteilung = "truncated_gaussian", log.scale = FALSE, standardabweichung = 5, standardabweichung_compare = NULL, vertex1 = NULL, vertex2 = NULL, window.size=NULL,step.width=NULL,lognormal=NULL,perc.trunc=2.5,n.min.window=200,n.min=100,apply.rounding=FALSE) {
     par(mar = c(3,3,3,3))
     # if (verteilung == "truncated_gaussian") {
     #     if (standardabweichung == 5) {
@@ -40,11 +40,11 @@ run <- function(x, t, verteilung = "truncated_gaussian", log.scale = FALSE, stan
     #     res <- w_sliding.reflim(x, t, verteilung = verteilung, a = a, b = b, c = c, d = d, window.size = window.size, step.width = step.width, lognormal = lognormal)
     #     gg_alist(result.sliding.reflim = res)
     if (is.null(standardabweichung_compare)) {  # no comparison
-        res <- w_sliding.reflim(x, t, verteilung = verteilung, standard_deviation = standardabweichung, b = b, c = c, window.size = window.size, step.width = step.width, lognormal = lognormal)
+        res <- w_sliding.reflim(x, t, verteilung = verteilung, standard_deviation = standardabweichung, vertex1 = vertex1, vertex2 = vertex2, window.size = window.size, step.width = step.width, lognormal = lognormal)
         gg_alist(result.sliding.reflim = res, log.scale = log.scale)
     } else {
-        res1 <- w_sliding.reflim(x, t, verteilung = verteilung, standard_deviation = standardabweichung, b = b, c = c, window.size = window.size, step.width = step.width, lognormal = lognormal)
-        res2 <- w_sliding.reflim(x, t, verteilung = verteilung, standard_deviation = standardabweichung_compare, b = b, c = c, window.size = window.size, step.width = step.width, lognormal = lognormal)
+        res1 <- w_sliding.reflim(x, t, verteilung = verteilung, standard_deviation = standardabweichung, vertex1 = vertex1, vertex2 = vertex2, window.size = window.size, step.width = step.width, lognormal = lognormal)
+        res2 <- w_sliding.reflim(x, t, verteilung = verteilung, standard_deviation = standardabweichung_compare, vertex1 = vertex1, vertex2 = vertex2, window.size = window.size, step.width = step.width, lognormal = lognormal)
         gg_alist_custom_sd(result.sliding.reflim1 = res1, result.sliding.reflim2 = res2, log.scale = log.scale)
     }
     
@@ -545,7 +545,7 @@ makeWeightFunction <- function(distribution = "truncated_gaussian", ...) {
 #' 
 #' @export
 
-w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", standard_deviation = 5, a = NULL, b = NULL, c = NULL, d = NULL, window.size=NULL,step.width=NULL,lognormal=NULL,perc.trunc=2.5,n.min.window=200,n.min=100,apply.rounding=FALSE, plot.weight=TRUE)
+w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", standard_deviation = 5, start_point = NULL, vertex1 = NULL, vertex2 = NULL, end_point = NULL, window.size=NULL,step.width=NULL,lognormal=NULL,perc.trunc=2.5,n.min.window=200,n.min=100,apply.rounding=FALSE, plot.weight=TRUE)
 {
     print(paste("sd = ", standard_deviation))
     
@@ -642,25 +642,25 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
                         www <- w_function(interval_cov, mean = (min(interval_cov) + max(interval_cov)) / 2)
                     } else if (verteilung == "triangular") {
  
-                        b <- if (is.null(b)) 0.5 else b
+                        vertex1 <- if (is.null(vertex1)) 0.5 else vertex1
                         
-                        a.value <- min(interval_cov)
-                        c.value <- max(interval_cov)
-                        b.value <- (c.value - a.value) * b + a.value  # b is the vertex of the triangle
+                        start_point.value <- min(interval_cov)
+                        end_point.value <- max(interval_cov)
+                        vertex1.value <- (end_point.value - start_point.value) * vertex1 + start_point.value  # vertex1 is the vertex of the triangle
 
-                        w_function <- makeWeightFunction(verteilung, a = a.value, b = b.value, c = c.value)
+                        w_function <- makeWeightFunction(verteilung, a = start_point.value, b = vertex1.value, c = end_point.value)
                         www <- w_function(interval_cov)
                     } else if (verteilung == "trapezoidal") {
 
-                        b <- if (is.null(b)) 0.3 else b
-                        c <- if (is.null(c)) 0.6 else c
+                        vertex1 <- if (is.null(vertex1)) 0.3 else vertex1
+                        vertex2 <- if (is.null(vertex2)) 0.6 else vertex2
                         
-                        a.value <- min(interval_cov)
-                        d.value <- max(interval_cov)
-                        b.value <- (d.value - a.value) * b + a.value  # b is the left horizontal point
-                        c.value <- (d.value - a.value) * c + a.value  # c is the right horizontal point
+                        start_point.value <- min(interval_cov)
+                        end_point.value <- max(interval_cov)
+                        vertex1.value <- (end_point.value - start_point.value) * vertex1 + start_point.value  # vertex1 is the left horizontal point
+                        vertex2.value <- (end_point.value - start_point.value) * vertex2 + start_point.value  # vertex2 is the right horizontal point
 
-                        w_function <- makeWeightFunction(distribution = verteilung, a = a.value, b = b.value, c = c.value, d = d.value)
+                        w_function <- makeWeightFunction(distribution = verteilung, a = start_point.value, b = vertex1.value, c = vertex2.value, d = end_point.value) # todo: change names
                         www <- w_function(interval_cov)
                     }
                     
@@ -725,24 +725,24 @@ w_sliding.reflim <- function(x,covariate,verteilung = "truncated_gaussian", stan
                         w_function <- makeWeightFunction(verteilung, sigma = standard_deviation)
                         www <- w_function(interval_cov, mean = (min(interval_cov) + max(interval_cov)) / 2)
                     } else if (verteilung == "triangular") {
-                        b <- if (is.null(b)) 0.5 else b
+                        vertex1 <- if (is.null(vertex1)) 0.5 else vertex1
                         
-                        a.value <- min(interval_cov)
-                        c.value <- max(interval_cov)
-                        b.value <- (c.value - a.value) * b + a.value
+                        start_point.value <- min(interval_cov)
+                        end_point.value <- max(interval_cov)
+                        vertex1.value <- (end_point.value - start_point.value) * vertex1 + start_point.value
 
-                        w_function <- makeWeightFunction(verteilung, a = a.value, b = b.value, c = c.value)
+                        w_function <- makeWeightFunction(verteilung, a = start_point.value, b = vertex1.value, c = end_point.value)
                         www <- w_function(interval_cov)
                     } else if (verteilung == "trapezoidal") {
-                        b <- if (is.null(b)) 0.3 else b
-                        c <- if (is.null(c)) 0.6 else c
+                        vertex1 <- if (is.null(vertex1)) 0.3 else vertex1
+                        vertex2 <- if (is.null(vertex2)) 0.6 else vertex2
                         
-                        a.value <- min(interval_cov)
-                        d.value <- max(interval_cov)
-                        b.value <- (d.value - a.value) * b + a.value
-                        c.value <- (d.value - a.value) * c + a.value
+                        start_point.value <- min(interval_cov)
+                        end_point.value <- max(interval_cov)
+                        vertex1.value <- (end_point.value - start_point.value) * vertex1 + start_point.value
+                        vertex2.value <- (end_point.value - start_point.value) * vertex2 + start_point.value
                         
-                        w_function <- makeWeightFunction(distribution = verteilung, a = a.value, b = b.value, c = c.value, d = d.value)
+                        w_function <- makeWeightFunction(distribution = verteilung, a = start_point.value, b = vertex1.value, c = vertex2.value, d = end_point.value)
                         www <- w_function(interval_cov)
                     }
                     
