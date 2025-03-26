@@ -613,6 +613,10 @@ w_sliding.reflim.plot <- function(x,covariate,verteilung = "truncated_gaussian",
             print("window.size & step.width not null")
             window.left <- covcomp[1]
             window.right <- window.left + window.size
+            
+            covariate.left <- numeric(n.steps)
+            covariate.right <- numeric(n.steps)
+            covariate.n <- numeric(n.steps)
             for (i in 1:n.steps) {
                 
                 is.in.interval <- covcomp >= window.left & covcomp <= window.right
