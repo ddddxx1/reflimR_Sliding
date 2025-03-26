@@ -102,7 +102,7 @@ ui <- fluidPage(
                            "Step Width:",
                            value = NULL),
               # numericInput("a", "Parameter a:", value = 0),
-              numericInput("b", "Vertex:", value = 0.5),
+              numericInput("vertex1", "Vertex:", value = 0.5),
               # numericInput("c", "Paramater c:", value = 1)
               radioButtons("log_scale", "Log Scale:", choices = c("No" = "no", "Yes" = "yes"), selected = "no")
             ),
@@ -116,8 +116,8 @@ ui <- fluidPage(
                            "Step Width:",
                            value = NULL),
               # numericInput("a_trap", "Parameter a:", value = 0),
-              numericInput("b_trap", "Top left vertex:", value = 0.3),
-              numericInput("c_trap", "Top right vertex:", value = 0.6),
+              numericInput("vertex1_trap", "Top left vertex:", value = 0.3),
+              numericInput("vertex2_trap", "Top right vertex:", value = 0.6),
               # numericInput("d_trap", "Parameter d:", value = 1)
               radioButtons("log_scale", "Log Scale:", choices = c("No" = "no", "Yes" = "yes"), selected = "no")
             )
@@ -172,15 +172,15 @@ server <- function(input, output, session) {
         } else if (input$verteilung == "triangular") {
             updateNumericInput(session, "window_size", value = NULL)
             updateNumericInput(session, "step_width", value = NULL)
-            updateNumericInput(session, "b", value = 0.5)
+            updateNumericInput(session, "vertex1", value = 0.5)
             updateRadioButtons(session, "log_scale", selected = "no")
             showNotification("The vertex is the peak position of the triangular distribution function, with a value range of (0, 1]. 
                              When the input value is 0.5, the triangle is an isosceles triangle.",duration = 10, type = "message")
         } else if (input$verteilung == "trapezoidal") {
             updateNumericInput(session, "window_size", value = NULL)
             updateNumericInput(session, "step_width", value = NULL)
-            updateNumericInput(session, "b_trap", value = 0.3)
-            updateNumericInput(session, "c_trap", value = 0.6)
+            updateNumericInput(session, "vertex1_trap", value = 0.3)
+            updateNumericInput(session, "vertex2_trap", value = 0.6)
             updateRadioButtons(session, "log_scale", selected = "no")
             showNotification("The top left and top right vertices of the trapezoidal distribution have a value range of (0, 1]. 
                              When 0.3 and 0.6 are entered respectively, the trapezoid is an isosceles trapezoid.",duration = 10, type = "message")
@@ -258,11 +258,11 @@ server <- function(input, output, session) {
 
         standardabweichung <- input$standardabweichung
         # a <- input$a
-        b <- input$b
+        vertex1 <- input$vertex1
         # c <- input$c
         # a_trap <- input$a_trap
-        b_trap <- input$b_trap
-        c_trap <- input$c_trap
+        vertex1_trap <- input$vertex1_trap
+        vertex2_trap <- input$vertex2_trap
         # d_trap <- input$d_trap
         
         
@@ -280,12 +280,12 @@ server <- function(input, output, session) {
                                            step.width = NULL)
           } else if (input$verteilung == "triangular") {
             res <- w_sliding.reflim.plot(user_x, user_t, verteilung = input$verteilung,
-                                         b = b,
+                                         vertex1 = vertex1,
                                          window.size = window_size,
                                          step.width = step_width)
           } else if (input$verteilung == "trapezoidal") {
             res <- w_sliding.reflim.plot(user_x, user_t, verteilung = input$verteilung,
-                                         b = b_trap, c = c_trap,
+                                         vertex1 = vertex1_trap, vertex2 = vertex2_trap,
                                          window.size = window_size,
                                          step.width = step_width)
           }
@@ -330,11 +330,11 @@ server <- function(input, output, session) {
         
         standardabweichung <- input$standardabweichung
         # a <- input$a
-        b <- input$b
+        vertex1 <- input$vertex1
         # c <- input$c
         # a_trap <- input$a_trap
-        b_trap <- input$b_trap
-        c_trap <- input$c_trap
+        vertex1_trap <- input$vertex1_trap
+        vertex2_trap <- input$vertex2_trap
         # d_trap <- input$d_trap
 
         result <- tryCatch({
@@ -351,12 +351,12 @@ server <- function(input, output, session) {
                     step.width = NULL)
             } else if (input$verteilung == "triangular") {
                 run(user_x, user_t, verteilung = input$verteilung, log.scale = log_scale_bool,
-                    b = b,
+                    vertex1 = vertex1,
                     window.size = window_size,
                     step.width = step_width)
             } else if (input$verteilung == "trapezoidal") {
                 run(user_x, user_t, verteilung = input$verteilung, log.scale = log_scale_bool,
-                     b = b_trap, c = c_trap,
+                     vertex1 = vertex1_trap, vertex2 = vertex2_trap,
                     window.size = window_size,
                     step.width = step_width)
             }
@@ -374,7 +374,7 @@ server <- function(input, output, session) {
         plot_info <- plot_data()
         
         if (!is.null(data_info$error)) {
-            return("Error: Disallowed Parameters. Please change!")
+            return("Error: Disallowed Parameters. Please change!")  # show this error in trapzoidal
           # return(paste("Error:", data_info$error))
         }
         if (!is.null(plot_info$error)) {
@@ -555,7 +555,7 @@ server <- function(input, output, session) {
 #' @description 
 #' This function is similar to the w_sliding.reflim function, but only records information about the weights of each point in each loop
 
-w_sliding.reflim.plot <- function(x,covariate,verteilung = "truncated_gaussian", standard_deviation = 5, b = NULL, c = NULL, window.size=NULL,step.width=NULL,lognormal=NULL,perc.trunc=2.5,n.min.window=200,n.min=100,apply.rounding=FALSE)
+w_sliding.reflim.plot <- function(x,covariate,verteilung = "truncated_gaussian", standard_deviation = 5, vertex1 = NULL, vertex2 = NULL, window.size=NULL,step.width=NULL,lognormal=NULL,perc.trunc=2.5,n.min.window=200,n.min=100,apply.rounding=FALSE)
 {
     is.nona <- !is.na(x) & !is.na(covariate)
     xx <- x[is.nona]
@@ -629,24 +629,24 @@ w_sliding.reflim.plot <- function(x,covariate,verteilung = "truncated_gaussian",
                         w_function <- makeWeightFunction(verteilung, sigma = standard_deviation)
                         www <- w_function(interval_cov, mean = (min(interval_cov) + max(interval_cov)) / 2)
                     } else if (verteilung == "triangular") {
-                        b <- if (is.null(b)) 0.5 else b
+                        vertex1 <- if (is.null(vertex1)) 0.5 else vertex1
                         
-                        a.value <- min(interval_cov)
-                        c.value <- max(interval_cov)
-                        b.value <- (c.value - a.value) * b + a.value
+                        start_point.value <- min(interval_cov)
+                        vertex2.value <- max(interval_cov)
+                        vertex1.value <- (vertex2.value - start_point.value) * vertex2 + start_point.value
 
-                        w_function <- makeWeightFunction(verteilung, a = a.value, b = b.value, c = c.value)
+                        w_function <- makeWeightFunction(verteilung, a = start_point.value, b = vertex2.value, c = vertex2.value)
                         www <- w_function(interval_cov)
                     } else if (verteilung == "trapezoidal") {
-                        b <- if (is.null(b)) 0.3 else b
-                        c <- if (is.null(c)) 0.6 else c
+                        vertex1 <- if (is.null(vertex1)) 0.3 else vertex1
+                        vertex2 <- if (is.null(vertex2)) 0.6 else vertex2
                         
-                        a.value <- min(interval_cov)
-                        d.value <- max(interval_cov)
-                        b.value <- (d.value - a.value) * b + a.value
-                        c.value <- (d.value - b.value) * c + a.value
+                        start_point.value <- min(interval_cov)
+                        end_point.value <- max(interval_cov)
+                        vertex1.value <- (end_point.value - start_point.value) * vertex1 + start_point.value
+                        vertex2.value <- (end_point.value - vertex1.value) * vertex2 + start_point.value
                         
-                        w_function <- makeWeightFunction(distribution = verteilung, a = a.value, b = b.value, c = c.value, d = d.value)
+                        w_function <- makeWeightFunction(distribution = verteilung, a = start_point.value, b = vertex1.value, c = vertex2.value, d = end_point.value)
                         www <- w_function(interval_cov)
                     }
                     w.interval[[i]] <- www
@@ -686,24 +686,24 @@ w_sliding.reflim.plot <- function(x,covariate,verteilung = "truncated_gaussian",
                         w_function <- makeWeightFunction(distribution = verteilung, sigma = standard_deviation)
                         www <- w_function(interval_cov, mean = (min(interval_cov) + max(interval_cov)) / 2)
                     } else if (verteilung == "triangular") {
-                        b <- if (is.null(b)) 0.5 else b
+                        vertex1 <- if (is.null(vertex1)) 0.5 else vertex1
                         
-                        a.value <- min(interval_cov)
-                        c.value <- max(interval_cov)
-                        b.value <- (c.value - a.value) * b + a.value
+                        start_point.value <- min(interval_cov)
+                        vertex2.value <- max(interval_cov)
+                        vertex1.value <- (vertex2.value - start_point.value) * vertex1 + start_point.value
 
-                        w_function <- makeWeightFunction(verteilung, a = a.value, b = b.value, c = c.value)
+                        w_function <- makeWeightFunction(verteilung, a = start_point.value, b = vertex1.value, c = vertex2.value)
                         www <- w_function(interval_cov)
                     } else if (verteilung == "trapezoidal") {
-                        b <- if (is.null(b)) 0.3 else b
-                        c <- if (is.null(c)) 0.6 else c
+                        vertex1 <- if (is.null(vertex1)) 0.3 else vertex1
+                        vertex2 <- if (is.null(vertex2)) 0.6 else vertex2
                         
-                        a.value <- min(interval_cov)
-                        d.value <- max(interval_cov)
-                        b.value <- (d.value - a.value) * b + a.value
-                        c.value <- (d.value - b.value) * c + a.value
+                        start_point.value <- min(interval_cov)
+                        end_point.value <- max(interval_cov)
+                        vertex1.value <- (end_point.value - start_point.value) * vertex1 + start_point.value
+                        vertex2.value <- (end_point.value - vertex1.value) * vertex2 + start_point.value
 
-                        w_function <- makeWeightFunction(distribution = verteilung, a = a.value, b = b.value, c = c.value, d = d.value)
+                        w_function <- makeWeightFunction(distribution = verteilung, a = start_point.value, b = vertex1.value, c = vertex2.value, d = end_point.value)
 
                         www <- w_function(interval_cov)
                     }
