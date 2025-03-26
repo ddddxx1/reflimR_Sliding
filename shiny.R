@@ -636,10 +636,10 @@ w_sliding.reflim.plot <- function(x,covariate,verteilung = "truncated_gaussian",
                         vertex1 <- if (is.null(vertex1)) 0.5 else vertex1
                         
                         start_point.value <- min(interval_cov)
-                        vertex2.value <- max(interval_cov)
-                        vertex1.value <- (vertex2.value - start_point.value) * vertex2 + start_point.value
+                        end_point.value <- max(interval_cov)
+                        vertex1.value <- (end_point.value - start_point.value) * vertex1 + start_point.value
 
-                        w_function <- makeWeightFunction(verteilung, a = start_point.value, b = vertex2.value, c = vertex2.value)
+                        w_function <- makeWeightFunction(verteilung, a = start_point.value, b = vertex1.value, c = end_point.value)
                         www <- w_function(interval_cov)
                     } else if (verteilung == "trapezoidal") {
                         vertex1 <- if (is.null(vertex1)) 0.3 else vertex1
@@ -693,10 +693,10 @@ w_sliding.reflim.plot <- function(x,covariate,verteilung = "truncated_gaussian",
                         vertex1 <- if (is.null(vertex1)) 0.5 else vertex1
                         
                         start_point.value <- min(interval_cov)
-                        vertex2.value <- max(interval_cov)
-                        vertex1.value <- (vertex2.value - start_point.value) * vertex1 + start_point.value
+                        end_point.value <- max(interval_cov)
+                        vertex1.value <- (end_point.value - start_point.value) * vertex1 + start_point.value
 
-                        w_function <- makeWeightFunction(verteilung, a = start_point.value, b = vertex1.value, c = vertex2.value)
+                        w_function <- makeWeightFunction(verteilung, a = start_point.value, b = vertex1.value, c = end_point.value)
                         www <- w_function(interval_cov)
                     } else if (verteilung == "trapezoidal") {
                         vertex1 <- if (is.null(vertex1)) 0.3 else vertex1
