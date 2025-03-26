@@ -1,6 +1,8 @@
 #shiny-improvement
-setwd("D:\\project\\R\\Praxisprojekt")
-source("main.R")
+# setwd("D:\\project\\R\\Praxisprojekt")
+data.basis.path <- getwd()
+# source("main.R")
+source(paste0(data.basis.path, "/main.R"))
 # source("D:/AppData/OneDrive - lelelelele/Studium/Bachelor/WiSe24-25/Praxisprojekt/code/main.R")
 if (require("shiny")) {
     library(shiny)
