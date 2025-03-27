@@ -3,7 +3,7 @@
 data.basis.path <- getwd()
 # source("main.R")
 source(paste0(data.basis.path, "/main.R"))
-# source("D:/AppData/OneDrive - lelelelele/Studium/Bachelor/WiSe24-25/Praxisprojekt/code/main.R")
+
 if (require("shiny")) {
     library(shiny)
 } else {
@@ -268,7 +268,6 @@ server <- function(input, output, session) {
         # d_trap <- input$d_trap
         
         
-
         result <- tryCatch({
           if (input$verteilung == "truncated_gaussian") {
             res <- w_sliding.reflim.plot(user_x, user_t, verteilung = input$verteilung,
@@ -305,7 +304,6 @@ server <- function(input, output, session) {
             # Returns an error message
             list(res = NULL, segment_indices = NULL, segment_count = 0, error = e$message)
         })
-
         return(result)
     })
 
@@ -362,7 +360,6 @@ server <- function(input, output, session) {
                     window.size = window_size,
                     step.width = step_width)
             }
-            
         }, error = function(e) {
             message("Error: ", e$message)
             return(NULL)
@@ -377,7 +374,7 @@ server <- function(input, output, session) {
         
         if (!is.null(data_info$error)) {
             return("Error: Disallowed Parameters. Please change!")  # show this error in trapzoidal
-          # return(paste("Error:", data_info$error))
+            # return(paste("Error:", data_info$error))
         }
         if (!is.null(plot_info$error)) {
             return(paste("Error: ", plot_info$error))
@@ -385,7 +382,6 @@ server <- function(input, output, session) {
         # if (!is.null(data_info$error) || !is.null(plot_info$error)) {
         #     return("Error: Disallowed Parameters. Please change!")
         # }
-        
         return(NULL)
     })
     
@@ -529,27 +525,6 @@ server <- function(input, output, session) {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ##### function #####
 
 #' w_sliding.reflim.plot
@@ -557,215 +532,215 @@ server <- function(input, output, session) {
 #' @description 
 #' This function is similar to the w_sliding.reflim function, but only records information about the weights of each point in each loop
 
-w_sliding.reflim.plot <- function(x,covariate,verteilung = "truncated_gaussian", standard_deviation = 5, vertex1 = NULL, vertex2 = NULL, window.size=NULL,step.width=NULL,lognormal=NULL,perc.trunc=2.5,n.min.window=200,n.min=100,apply.rounding=FALSE)
-{
-    is.nona <- !is.na(x) & !is.na(covariate)
-    xx <- x[is.nona]
-    covcomp <- covariate[is.nona]
-    
-    ord.cov <- order(covcomp)
-    xx <- xx[ord.cov]
-    covcomp <- covcomp[ord.cov]
-    
-    if(!is.numeric(xx)){stop("(reflim) x must be numeric.")}
-    if(min(xx) <= 0){stop("(reflim) only positive values allowed.")}
-    n <- length(xx)
-    if(n < 39){stop(paste0("(iboxplot) n = ", n, ". The length of x should be 200 or more. The absolute minimum for reference limit estimation is 39."))}
-    if(n < n.min){  # Determine enough points
-        print(noquote(paste("n =", n, "where a minimum of", n.min, "is required. You may try to reduce n.min at the loss of accuracy.")))
-        return(c(mean = NA, sd = NA, lower.lim = NA, upper.lim = NA))
-    }
-    
-    cov.unique <- covcomp[!duplicated(covcomp)]
-    n.steps <- length(cov.unique)
-    print(paste("n.steps =", n.steps))
-    if(n.steps==1){stop("The covariate is constant.")}
-    
-    if (!is.null(window.size) & !is.null(step.width)){
-        n.steps <- ceiling(max(c(1,(covcomp[length(covcomp)]-covcomp[1]-window.size)/step.width)))
-        print(paste("get new n.steps =", n.steps))
-    }
-    
-    x.interval <- list()
-    t.interval <- list()
-    w.interval <- list()
-    
-    sum.www <- rep(NA, n.steps)
-    
-    loop <- 0
-    
-    if (verteilung == "gaussian") {
-        print("gaussian")
-        w_function <- makeWeightFunction("gaussian", sigma = standard_deviation)
-        step_index <- 1
-        for (i in seq(min(covcomp), max(covcomp), length.out = n.steps)) {  # Generate an equally spaced sequence from the minimum to the maximum value of covcomp.
-            www <- w_function(covcomp, mean = i)
-
-            res.reflim <- w_reflim(xx, www, n.min = n.min, apply.rounding = apply.rounding, lognormal = lognormal, plot.all = TRUE)
-            loop <- loop + 1
-
-            x.interval[[step_index]] <- xx
-            t.interval[[step_index]] <- covcomp
-            w.interval[[step_index]] <- www
-            
-            step_index <- step_index + 1
-        }
-    } else {
-        if (!is.null(window.size) & !is.null(step.width)) {
-            print("window.size & step.width not null")
-            window.left <- covcomp[1]
-            window.right <- window.left + window.size
-            
-            covariate.left <- numeric(n.steps)
-            covariate.right <- numeric(n.steps)
-            covariate.n <- numeric(n.steps)
-            for (i in 1:n.steps) {
-                
-                is.in.interval <- covcomp >= window.left & covcomp <= window.right
-                if (sum(is.in.interval) >= n.min) {
-                    
-                    interval_cov <- covcomp[is.in.interval]
-                    t.interval[[i]] <- interval_cov
-                    
-                    xxx <- xx[is.in.interval]
-                    x.interval[[i]] <- xxx 
-                    
-                    
-                    if (verteilung == "truncated_gaussian") {
-                        w_function <- makeWeightFunction(verteilung, sigma = standard_deviation)
-                        www <- w_function(interval_cov, mean = (min(interval_cov) + max(interval_cov)) / 2)
-                    } else if (verteilung == "triangular") {
-                        vertex1 <- if (is.null(vertex1)) 0.5 else vertex1
-                        
-                        start_point.value <- min(interval_cov)
-                        end_point.value <- max(interval_cov)
-                        vertex1.value <- (end_point.value - start_point.value) * vertex1 + start_point.value
-
-                        w_function <- makeWeightFunction(verteilung, a = start_point.value, b = vertex1.value, c = end_point.value)
-                        www <- w_function(interval_cov)
-                    } else if (verteilung == "trapezoidal") {
-                        vertex1 <- if (is.null(vertex1)) 0.3 else vertex1
-                        vertex2 <- if (is.null(vertex2)) 0.6 else vertex2
-                        
-                        start_point.value <- min(interval_cov)
-                        end_point.value <- max(interval_cov)
-                        vertex1.value <- (end_point.value - start_point.value) * vertex1 + start_point.value
-                        vertex2.value <- (end_point.value - vertex1.value) * vertex2 + start_point.value
-                        
-                        w_function <- makeWeightFunction(distribution = verteilung, a = start_point.value, b = vertex1.value, c = vertex2.value, d = end_point.value)
-                        www <- w_function(interval_cov)
-                    }
-                    w.interval[[i]] <- www
-
-                    www_sum <- sum(www)
-
-                    sum.www[i] <- www_sum
-                    
-                        res.reflim <- w_reflim(xxx, www, n.min = n.min, apply.rounding = apply.rounding, lognormal = lognormal, plot.all = TRUE)
-                        loop <- loop + 1
-                    
-                } else {
-                    covariate.left[i] <- window.left
-                    covariate.right[i] <- window.right
-                    covariate.n[i] <- sum(is.in.interval)
-                }
-                window.left <- window.left + step.width
-                window.right <- window.right + step.width
-            }
-        } else {
-            print("window.size & step.width is null")
-            ind <- 1
-            indl <- 1
-            indr <- 2
-            while(indr <= length(cov.unique)) {
-                is.in.interval <- covcomp >= cov.unique[indl] & covcomp < cov.unique[indr]
-
-                if (sum(is.in.interval) >= n.min.window) {
-
-                    interval_cov <- covcomp[is.in.interval]
-                    t.interval[[ind]] <- interval_cov
-                    
-                    xxx <- xx[is.in.interval]
-                    x.interval[[ind]] <- xxx
-                    
-                    if (verteilung == "truncated_gaussian") {
-                        w_function <- makeWeightFunction(distribution = verteilung, sigma = standard_deviation)
-                        www <- w_function(interval_cov, mean = (min(interval_cov) + max(interval_cov)) / 2)
-                    } else if (verteilung == "triangular") {
-                        vertex1 <- if (is.null(vertex1)) 0.5 else vertex1
-                        
-                        start_point.value <- min(interval_cov)
-                        end_point.value <- max(interval_cov)
-                        vertex1.value <- (end_point.value - start_point.value) * vertex1 + start_point.value
-
-                        w_function <- makeWeightFunction(verteilung, a = start_point.value, b = vertex1.value, c = end_point.value)
-                        www <- w_function(interval_cov)
-                    } else if (verteilung == "trapezoidal") {
-                        vertex1 <- if (is.null(vertex1)) 0.3 else vertex1
-                        vertex2 <- if (is.null(vertex2)) 0.6 else vertex2
-                        
-                        start_point.value <- min(interval_cov)
-                        end_point.value <- max(interval_cov)
-                        vertex1.value <- (end_point.value - start_point.value) * vertex1 + start_point.value
-                        vertex2.value <- (end_point.value - vertex1.value) * vertex2 + start_point.value
-
-                        w_function <- makeWeightFunction(distribution = verteilung, a = start_point.value, b = vertex1.value, c = vertex2.value, d = end_point.value)
-
-                        www <- w_function(interval_cov)
-                    }
-                    w.interval[[ind]] <- www 
-                    
-                    www_sum <- sum(www)
-
-                    sum.www[ind] <- www_sum
-
-                    
-                        res.reflim <- w_reflim(xxx, www, n.min = n.min, apply.rounding = apply.rounding, lognormal = lognormal, plot.all = TRUE)
-                        loop <- loop + 1
-                        
-                        indl <- indl + 1
-                        indr <- indr + 1
-                        ind <- ind + 1
-                    
-                } else {
-                    indr <- indr + 1
-                }
-            }
-        }
-    }
-
-    
-    
-    print(paste("Number of loops = ", loop))
-    res <- data.frame()
-    
-    last_was_separetor <- TRUE
-
-    for (i in 1:loop) {
-        temp_df <- data.frame(
-            x = x.interval[[i]],
-            t = t.interval[[i]],
-            w = w.interval[[i]]
-        )
-
-        res <- rbind(res, temp_df)
-        
-        if (nrow(temp_df) > 0) {
-            res <- rbind(res, temp_df)
-            
-            if (!last_was_separetor) {
-                separator <- data.frame(x = "---", t = "---", w = "---")
-                res <- rbind(res, separator)
-            }
-            last_was_separetor <- FALSE
-        } else {
-            last_was_separetor <- TRUE
-        }
-
-    }
-    
-    return(res)
-}
+# w_sliding.reflim.plot <- function(x,covariate,verteilung = "truncated_gaussian", standard_deviation = 5, vertex1 = NULL, vertex2 = NULL, window.size=NULL,step.width=NULL,lognormal=NULL,perc.trunc=2.5,n.min.window=200,n.min=100,apply.rounding=FALSE)
+# {
+#     is.nona <- !is.na(x) & !is.na(covariate)
+#     xx <- x[is.nona]
+#     covcomp <- covariate[is.nona]
+#     
+#     ord.cov <- order(covcomp)
+#     xx <- xx[ord.cov]
+#     covcomp <- covcomp[ord.cov]
+#     
+#     if(!is.numeric(xx)){stop("(reflim) x must be numeric.")}
+#     if(min(xx) <= 0){stop("(reflim) only positive values allowed.")}
+#     n <- length(xx)
+#     if(n < 39){stop(paste0("(iboxplot) n = ", n, ". The length of x should be 200 or more. The absolute minimum for reference limit estimation is 39."))}
+#     if(n < n.min){  # Determine enough points
+#         print(noquote(paste("n =", n, "where a minimum of", n.min, "is required. You may try to reduce n.min at the loss of accuracy.")))
+#         return(c(mean = NA, sd = NA, lower.lim = NA, upper.lim = NA))
+#     }
+#     
+#     cov.unique <- covcomp[!duplicated(covcomp)]
+#     n.steps <- length(cov.unique)
+#     print(paste("n.steps =", n.steps))
+#     if(n.steps==1){stop("The covariate is constant.")}
+#     
+#     if (!is.null(window.size) & !is.null(step.width)){
+#         n.steps <- ceiling(max(c(1,(covcomp[length(covcomp)]-covcomp[1]-window.size)/step.width)))
+#         print(paste("get new n.steps =", n.steps))
+#     }
+#     
+#     x.interval <- list()
+#     t.interval <- list()
+#     w.interval <- list()
+#     
+#     sum.www <- rep(NA, n.steps)
+#     
+#     loop <- 0
+#     
+#     if (verteilung == "gaussian") {
+#         print("gaussian")
+#         w_function <- makeWeightFunction("gaussian", sigma = standard_deviation)
+#         step_index <- 1
+#         for (i in seq(min(covcomp), max(covcomp), length.out = n.steps)) {  # Generate an equally spaced sequence from the minimum to the maximum value of covcomp.
+#             www <- w_function(covcomp, mean = i)
+# 
+#             res.reflim <- w_reflim(xx, www, n.min = n.min, apply.rounding = apply.rounding, lognormal = lognormal, plot.all = TRUE)
+#             loop <- loop + 1
+# 
+#             x.interval[[step_index]] <- xx
+#             t.interval[[step_index]] <- covcomp
+#             w.interval[[step_index]] <- www
+#             
+#             step_index <- step_index + 1
+#         }
+#     } else {
+#         if (!is.null(window.size) & !is.null(step.width)) {
+#             print("window.size & step.width not null")
+#             window.left <- covcomp[1]
+#             window.right <- window.left + window.size
+#             
+#             covariate.left <- numeric(n.steps)
+#             covariate.right <- numeric(n.steps)
+#             covariate.n <- numeric(n.steps)
+#             for (i in 1:n.steps) {
+#                 
+#                 is.in.interval <- covcomp >= window.left & covcomp <= window.right
+#                 if (sum(is.in.interval) >= n.min) {
+#                     
+#                     interval_cov <- covcomp[is.in.interval]
+#                     t.interval[[i]] <- interval_cov
+#                     
+#                     xxx <- xx[is.in.interval]
+#                     x.interval[[i]] <- xxx 
+#                     
+#                     
+#                     if (verteilung == "truncated_gaussian") {
+#                         w_function <- makeWeightFunction(verteilung, sigma = standard_deviation)
+#                         www <- w_function(interval_cov, mean = (min(interval_cov) + max(interval_cov)) / 2)
+#                     } else if (verteilung == "triangular") {
+#                         vertex1 <- if (is.null(vertex1)) 0.5 else vertex1
+#                         
+#                         start_point.value <- min(interval_cov)
+#                         end_point.value <- max(interval_cov)
+#                         vertex1.value <- (end_point.value - start_point.value) * vertex1 + start_point.value
+# 
+#                         w_function <- makeWeightFunction(verteilung, a = start_point.value, b = vertex1.value, c = end_point.value)
+#                         www <- w_function(interval_cov)
+#                     } else if (verteilung == "trapezoidal") {
+#                         vertex1 <- if (is.null(vertex1)) 0.3 else vertex1
+#                         vertex2 <- if (is.null(vertex2)) 0.6 else vertex2
+#                         
+#                         start_point.value <- min(interval_cov)
+#                         end_point.value <- max(interval_cov)
+#                         vertex1.value <- (end_point.value - start_point.value) * vertex1 + start_point.value
+#                         vertex2.value <- (end_point.value - vertex1.value) * vertex2 + start_point.value
+#                         
+#                         w_function <- makeWeightFunction(distribution = verteilung, a = start_point.value, b = vertex1.value, c = vertex2.value, d = end_point.value)
+#                         www <- w_function(interval_cov)
+#                     }
+#                     w.interval[[i]] <- www
+# 
+#                     www_sum <- sum(www)
+# 
+#                     sum.www[i] <- www_sum
+#                     
+#                         res.reflim <- w_reflim(xxx, www, n.min = n.min, apply.rounding = apply.rounding, lognormal = lognormal, plot.all = TRUE)
+#                         loop <- loop + 1
+#                     
+#                 } else {
+#                     covariate.left[i] <- window.left
+#                     covariate.right[i] <- window.right
+#                     covariate.n[i] <- sum(is.in.interval)
+#                 }
+#                 window.left <- window.left + step.width
+#                 window.right <- window.right + step.width
+#             }
+#         } else {
+#             print("window.size & step.width is null")
+#             ind <- 1
+#             indl <- 1
+#             indr <- 2
+#             while(indr <= length(cov.unique)) {
+#                 is.in.interval <- covcomp >= cov.unique[indl] & covcomp < cov.unique[indr]
+# 
+#                 if (sum(is.in.interval) >= n.min.window) {
+# 
+#                     interval_cov <- covcomp[is.in.interval]
+#                     t.interval[[ind]] <- interval_cov
+#                     
+#                     xxx <- xx[is.in.interval]
+#                     x.interval[[ind]] <- xxx
+#                     
+#                     if (verteilung == "truncated_gaussian") {
+#                         w_function <- makeWeightFunction(distribution = verteilung, sigma = standard_deviation)
+#                         www <- w_function(interval_cov, mean = (min(interval_cov) + max(interval_cov)) / 2)
+#                     } else if (verteilung == "triangular") {
+#                         vertex1 <- if (is.null(vertex1)) 0.5 else vertex1
+#                         
+#                         start_point.value <- min(interval_cov)
+#                         end_point.value <- max(interval_cov)
+#                         vertex1.value <- (end_point.value - start_point.value) * vertex1 + start_point.value
+# 
+#                         w_function <- makeWeightFunction(verteilung, a = start_point.value, b = vertex1.value, c = end_point.value)
+#                         www <- w_function(interval_cov)
+#                     } else if (verteilung == "trapezoidal") {
+#                         vertex1 <- if (is.null(vertex1)) 0.3 else vertex1
+#                         vertex2 <- if (is.null(vertex2)) 0.6 else vertex2
+#                         
+#                         start_point.value <- min(interval_cov)
+#                         end_point.value <- max(interval_cov)
+#                         vertex1.value <- (end_point.value - start_point.value) * vertex1 + start_point.value
+#                         vertex2.value <- (end_point.value - vertex1.value) * vertex2 + start_point.value
+# 
+#                         w_function <- makeWeightFunction(distribution = verteilung, a = start_point.value, b = vertex1.value, c = vertex2.value, d = end_point.value)
+# 
+#                         www <- w_function(interval_cov)
+#                     }
+#                     w.interval[[ind]] <- www 
+#                     
+#                     www_sum <- sum(www)
+# 
+#                     sum.www[ind] <- www_sum
+# 
+#                     
+#                         res.reflim <- w_reflim(xxx, www, n.min = n.min, apply.rounding = apply.rounding, lognormal = lognormal, plot.all = TRUE)
+#                         loop <- loop + 1
+#                         
+#                         indl <- indl + 1
+#                         indr <- indr + 1
+#                         ind <- ind + 1
+#                     
+#                 } else {
+#                     indr <- indr + 1
+#                 }
+#             }
+#         }
+#     }
+# 
+#     
+#     
+#     print(paste("Number of loops = ", loop))
+#     res <- data.frame()
+#     
+#     last_was_separetor <- TRUE
+# 
+#     for (i in 1:loop) {
+#         temp_df <- data.frame(
+#             x = x.interval[[i]],
+#             t = t.interval[[i]],
+#             w = w.interval[[i]]
+#         )
+# 
+#         res <- rbind(res, temp_df)
+#         
+#         if (nrow(temp_df) > 0) {
+#             res <- rbind(res, temp_df)
+#             
+#             if (!last_was_separetor) {
+#                 separator <- data.frame(x = "---", t = "---", w = "---")
+#                 res <- rbind(res, separator)
+#             }
+#             last_was_separetor <- FALSE
+#         } else {
+#             last_was_separetor <- TRUE
+#         }
+# 
+#     }
+#     
+#     return(res)
+# }
 
 
 shinyApp(ui = ui, server = server)
