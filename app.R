@@ -1,8 +1,18 @@
 #shiny-improvement
+
+
+####################################### WEILCOM TO THE SHINY APP ############################################
+####################################### from Xufan Dong (2025) ##############################################
+#############################################################################################################
+
+
+####################################### Setup & Dependencies ############################################
+
 # setwd("D:\\project\\R\\Praxisprojekt")
 data.basis.path <- getwd()
 # source("main.R")
 source(paste0(data.basis.path, "/main.R"))
+par(mar = c(3,3,3,3)) # Fix the problem of not being able to display pictures because the window is too small
 
 if (require("shiny")) {
     library(shiny)
@@ -28,6 +38,18 @@ if (require("dplyr")) {
     install.packages("dplyr")
     library(dplyr)
 }
+if (require("Hmisc")) {
+    library(Hmisc)
+} else {
+    install.packages("Hmisc")
+    library(Hmisc)
+}
+if (require("reflimR")) {
+    library(reflimR)
+} else {
+    install.packages("reflimR")
+    library(reflimR)
+}
 
 if (require("shinycssloaders")) {
     library(shinycssloaders)
@@ -39,18 +61,20 @@ if (require("shinycssloaders")) {
 
 
 
-
-par(mar = c(3,3,3,3)) # Fix the problem of not being able to display pictures because the window is too small
+####################################### Sample Dataset ############################################
 
 x <- reflimR::livertests$ALB
 t <- reflimR::livertests$Age
+
+
+####################################### User interface ############################################
 
 ui <- fluidPage(
     titlePanel("Scatter Plot by Segment"),
 
     sidebarLayout(
         sidebarPanel(
-            selectInput("verteilung",
+            selectInput("distribution",
                         "Choose Distribution:",
                         choices = c("Truncated gaussian" = "truncated_gaussian",
                                     "Gaussian" = "gaussian",
@@ -74,54 +98,55 @@ ui <- fluidPage(
 
             # for truncated_gaussian
             conditionalPanel(
-              condition = "input.verteilung == 'truncated_gaussian'",
-              numericInput("window_size",
-                           "Window Size:",
-                           value = NULL),
-              numericInput("step_width",
-                           "Step Width:",
-                           value = NULL),
-              numericInput("standardabweichung",
-                           "Standard deviation:",
-                           value = 5),
-              radioButtons("log_scale", "Log Scale:", choices = c("No" = "no", "Yes" = "yes"), selected = "no")
-            ),
+                condition = "input.distribution == 'truncated_gaussian'",
+                numericInput("window_size", "Window Size:", value = NULL),
+                numericInput("step_width", "Step Width:", value = NULL),
+                numericInput("standard_deviation", "Standard deviation:", value = 5),
+                radioButtons(
+                    "log_scale",
+                    "Log Scale:",
+                    choices = c("No" = "no", "Yes" = "yes"),
+                    selected = "no"
+                )
+            ), 
             # for gaussian
             conditionalPanel(
-                condition = "input.verteilung == 'gaussian'",
-                numericInput("standardabweichung",
+                condition = "input.distribution == 'gaussian'",
+                numericInput("standard_deviation",
                              "Standard deviation:",
                              value = 5),
                 radioButtons("log_scale", "Log Scale:", choices = c("No" = "no", "Yes" = "yes"), selected = "no")
             ),
             # for triangular
             conditionalPanel(
-              condition = "input.verteilung == 'triangular'",
-              numericInput("window_size",
-                           "Window Size:",
-                           value = NULL),
-              numericInput("step_width",
-                           "Step Width:",
-                           value = NULL),
-              # numericInput("a", "Parameter a:", value = 0),
-              numericInput("vertex1", "Vertex:", value = 0.5),
-              # numericInput("c", "Paramater c:", value = 1)
-              radioButtons("log_scale", "Log Scale:", choices = c("No" = "no", "Yes" = "yes"), selected = "no")
-            ),
+                condition = "input.distribution == 'triangular'",
+                numericInput("window_size", "Window Size:", value = NULL),
+                numericInput("step_width", "Step Width:", value = NULL),
+                # numericInput("a", "Parameter a:", value = 0),
+                numericInput("vertex1", "Vertex:", value = 0.5),
+                # numericInput("c", "Paramater c:", value = 1)
+                radioButtons(
+                    "log_scale",
+                    "Log Scale:",
+                    choices = c("No" = "no", "Yes" = "yes"),
+                    selected = "no"
+                )
+            ), 
             # for trapezoidal
             conditionalPanel(
-              condition = "input.verteilung == 'trapezoidal'",
-              numericInput("window_size",
-                           "Window Size:",
-                           value = NULL),
-              numericInput("step_width",
-                           "Step Width:",
-                           value = NULL),
-              # numericInput("a_trap", "Parameter a:", value = 0),
-              numericInput("vertex1_trap", "Top left vertex:", value = 0.3),
-              numericInput("vertex2_trap", "Top right vertex:", value = 0.6),
-              # numericInput("d_trap", "Parameter d:", value = 1)
-              radioButtons("log_scale", "Log Scale:", choices = c("No" = "no", "Yes" = "yes"), selected = "no")
+                condition = "input.distribution == 'trapezoidal'",
+                numericInput("window_size", "Window Size:", value = NULL),
+                numericInput("step_width", "Step Width:", value = NULL),
+                # numericInput("a_trap", "Parameter a:", value = 0),
+                numericInput("vertex1_trap", "Top left vertex:", value = 0.3),
+                numericInput("vertex2_trap", "Top right vertex:", value = 0.6),
+                # numericInput("d_trap", "Parameter d:", value = 1)
+                radioButtons(
+                    "log_scale",
+                    "Log Scale:",
+                    choices = c("No" = "no", "Yes" = "yes"),
+                    selected = "no"
+                )
             )
         ),
 
@@ -158,27 +183,29 @@ ui <- fluidPage(
 )
 
 
+############################################ Server logic ############################################
+
 server <- function(input, output, session) {
     values <- reactiveValues(upload_state = NULL)
     
     # Reset inputs when switching the distribution
-    observeEvent(input$verteilung, {
-        if (input$verteilung == "truncated_gaussian") {
+    observeEvent(input$distribution, {
+        if (input$distribution == "truncated_gaussian") {
             updateNumericInput(session, "window_size", value = NULL)
             updateNumericInput(session, "step_width", value = NULL)
-            updateNumericInput(session, "standardabweichung", value = 5)
+            updateNumericInput(session, "standard_deviation", value = 5)
             updateRadioButtons(session, "log_scale", selected = "no")
-        } else if (input$verteilung == "gaussian") {
-            updateNumericInput(session, "standardabweichung", value = 5)
+        } else if (input$distribution == "gaussian") {
+            updateNumericInput(session, "standard_deviation", value = 5)
             updateRadioButtons(session, "log_scale", selected = "no")
-        } else if (input$verteilung == "triangular") {
+        } else if (input$distribution == "triangular") {
             updateNumericInput(session, "window_size", value = NULL)
             updateNumericInput(session, "step_width", value = NULL)
             updateNumericInput(session, "vertex1", value = 0.5)
             updateRadioButtons(session, "log_scale", selected = "no")
             showNotification("The vertex is the peak position of the triangular distribution function, with a value range of (0, 1]. 
                              When the input value is 0.5, the triangle is an isosceles triangle.",duration = 10, type = "message")
-        } else if (input$verteilung == "trapezoidal") {
+        } else if (input$distribution == "trapezoidal") {
             updateNumericInput(session, "window_size", value = NULL)
             updateNumericInput(session, "step_width", value = NULL)
             updateNumericInput(session, "vertex1_trap", value = 0.3)
@@ -217,27 +244,33 @@ server <- function(input, output, session) {
     # })
 
     observe({
-      # file_data <- uploaded_data()
-      file_data <- dataset_input()
-
-      if (!is.null(file_data)) {
-        col_names <- names(file_data)
-        updateSelectInput(session, "xcol", choices = col_names, selected = col_names[1])
-        updateSelectInput(session, "tcol", choices = col_names, selected = col_names[2])
-      }
+        # file_data <- uploaded_data()
+        file_data <- dataset_input()
+        
+        if (!is.null(file_data)) {
+            col_names <- names(file_data)
+            updateSelectInput(session,
+                              "xcol",
+                              choices = col_names,
+                              selected = col_names[1])
+            updateSelectInput(session,
+                              "tcol",
+                              choices = col_names,
+                              selected = col_names[2])
+        }
     })
 
     reactive_data <- reactive({
-      # file_data <- uploaded_data()
-      file_data <- dataset_input()
-
-      if (is.null(file_data)) {
-        return(list(x = x, t = t))  # If not uploaded, use standard x/t
-      }
-      selected_x <- file_data[[input$xcol]]
-      selected_t <- file_data[[input$tcol]]
-
-      return(list(x = selected_x, t = selected_t))
+        # file_data <- uploaded_data()
+        file_data <- dataset_input()
+        
+        if (is.null(file_data)) {
+            return(list(x = x, t = t))  # If not uploaded, use standard x/t
+        }
+        selected_x <- file_data[[input$xcol]]
+        selected_t <- file_data[[input$tcol]]
+        
+        return(list(x = selected_x, t = selected_t))
     })
 
     # Calculate res and segment_indices
@@ -258,7 +291,7 @@ server <- function(input, output, session) {
         }
         
 
-        standardabweichung <- input$standardabweichung
+        standard_deviation <- input$standard_deviation
         # a <- input$a
         vertex1 <- input$vertex1
         # c <- input$c
@@ -269,27 +302,44 @@ server <- function(input, output, session) {
         
         
         result <- tryCatch({
-          if (input$verteilung == "truncated_gaussian") {
-            res <- w_sliding.reflim.plot(user_x, user_t, verteilung = input$verteilung,
-                                         standard_deviation = standardabweichung,
-                                         window.size = window_size,
-                                         step.width = step_width)
-          } else if (input$verteilung == "gaussian") {
-              res <- w_sliding.reflim.plot(user_x, user_t, verteilung = input$verteilung,
-                                           standard_deviation = standardabweichung,
-                                           window.size = NULL,
-                                           step.width = NULL)
-          } else if (input$verteilung == "triangular") {
-            res <- w_sliding.reflim.plot(user_x, user_t, verteilung = input$verteilung,
-                                         vertex1 = vertex1,
-                                         window.size = window_size,
-                                         step.width = step_width)
-          } else if (input$verteilung == "trapezoidal") {
-            res <- w_sliding.reflim.plot(user_x, user_t, verteilung = input$verteilung,
-                                         vertex1 = vertex1_trap, vertex2 = vertex2_trap,
-                                         window.size = window_size,
-                                         step.width = step_width)
-          }
+            if (input$distribution == "truncated_gaussian") {
+                res <- w_sliding.reflim.plot(
+                    user_x,
+                    user_t,
+                    distribution = input$distribution,
+                    standard_deviation = standard_deviation,
+                    window.size = window_size,
+                    step.width = step_width
+                )
+            } else if (input$distribution == "gaussian") {
+                res <- w_sliding.reflim.plot(
+                    user_x,
+                    user_t,
+                    distribution = input$distribution,
+                    standard_deviation = standard_deviation,
+                    window.size = NULL,
+                    step.width = NULL
+                )
+            } else if (input$distribution == "triangular") {
+                res <- w_sliding.reflim.plot(
+                    user_x,
+                    user_t,
+                    distribution = input$distribution,
+                    vertex1 = vertex1,
+                    window.size = window_size,
+                    step.width = step_width
+                )
+            } else if (input$distribution == "trapezoidal") {
+                res <- w_sliding.reflim.plot(
+                    user_x,
+                    user_t,
+                    distribution = input$distribution,
+                    vertex1 = vertex1_trap,
+                    vertex2 = vertex2_trap,
+                    window.size = window_size,
+                    step.width = step_width
+                )
+            }
             
 
             # Compute segment index
@@ -312,10 +362,10 @@ server <- function(input, output, session) {
         user_x <- user_data$x
         user_t <- user_data$t
 
-        if (is.na(input$standardabweichung)) {
-            standardabweichung <- NULL
+        if (is.na(input$standard_deviation)) {
+            standard_deviation <- NULL
         } else {
-            standardabweichung <- input$standardabweichung
+            standard_deviation <- input$standard_deviation
         }
         if (is.na(input$window_size)) {
             window_size <- NULL
@@ -328,7 +378,7 @@ server <- function(input, output, session) {
             step_width <- input$step_width
         }
         
-        standardabweichung <- input$standardabweichung
+        standard_deviation <- input$standard_deviation
         # a <- input$a
         vertex1 <- input$vertex1
         # c <- input$c
@@ -339,23 +389,23 @@ server <- function(input, output, session) {
 
         result <- tryCatch({
             log_scale_bool <- ifelse(input$log_scale == "yes", TRUE, FALSE)
-            if (input$verteilung == "truncated_gaussian") {
-                run(user_x, user_t, verteilung = input$verteilung, log.scale = log_scale_bool,
-                    standardabweichung = standardabweichung,
+            if (input$distribution == "truncated_gaussian") {
+                run(user_x, user_t, distribution = input$distribution, log.scale = log_scale_bool,
+                    standard_deviation = standard_deviation,
                     window.size = window_size,
                     step.width = step_width)
-            } else if (input$verteilung == "gaussian") {
-                run(user_x, user_t, verteilung = input$verteilung, log.scale = log_scale_bool,
-                    standardabweichung = standardabweichung,
+            } else if (input$distribution == "gaussian") {
+                run(user_x, user_t, distribution = input$distribution, log.scale = log_scale_bool,
+                    standard_deviation = standard_deviation,
                     window.size = NULL,
                     step.width = NULL)
-            } else if (input$verteilung == "triangular") {
-                run(user_x, user_t, verteilung = input$verteilung, log.scale = log_scale_bool,
+            } else if (input$distribution == "triangular") {
+                run(user_x, user_t, distribution = input$distribution, log.scale = log_scale_bool,
                     vertex1 = vertex1,
                     window.size = window_size,
                     step.width = step_width)
-            } else if (input$verteilung == "trapezoidal") {
-                run(user_x, user_t, verteilung = input$verteilung, log.scale = log_scale_bool,
+            } else if (input$distribution == "trapezoidal") {
+                run(user_x, user_t, distribution = input$distribution, log.scale = log_scale_bool,
                      vertex1 = vertex1_trap, vertex2 = vertex2_trap,
                     window.size = window_size,
                     step.width = step_width)
@@ -435,7 +485,7 @@ server <- function(input, output, session) {
              as.numeric(segment_data$x),
              xlab = "t",
              ylab = "x",
-             main = paste("Scatter Plot for Segment", segment_index, "with Distribution:", input$verteilung),
+             main = paste("Scatter Plot for Segment", segment_index, "with Distribution:", input$distribution),
              pch = 16,
              col = w_colors)
         
@@ -481,7 +531,7 @@ server <- function(input, output, session) {
     
     # whether supported comparison types
     output$falseDistribution <- renderText({
-        if (input$verteilung != "truncated_gaussian" && input$verteilung != "gaussian") {
+        if (input$distribution != "truncated_gaussian" && input$distribution != "gaussian") {
             return("This distribution does not support comparison!")
         }
         return(NULL)
@@ -489,7 +539,7 @@ server <- function(input, output, session) {
     
     # Calculation/Drawing/ErrorReporting in Comparison
     observeEvent(input$compare, {
-        if (input$verteilung == "truncated_gaussian" || input$verteilung == "gaussian") {
+        if (input$distribution == "truncated_gaussian" || input$distribution == "gaussian") {
             print("begin to compare")
             user_data <- reactive_data()
             user_x <- user_data$x
@@ -500,8 +550,8 @@ server <- function(input, output, session) {
                     log_scale_bool <- ifelse(input$log_scale == "yes", TRUE, FALSE)
                     print(paste("log_scale_bool:", log_scale_bool))
                         
-                    res1 <- w_sliding.reflim(user_x, user_t, verteilung = input$verteilung, standard_deviation = input$standardabweichung, plot.weight = FALSE)  # Error: Disallowed Parameters. Please change!
-                    res2 <- w_sliding.reflim(user_x, user_t, verteilung = input$verteilung, standard_deviation = input$comparison_sd, plot.weight = FALSE)
+                    res1 <- w_sliding.reflim(user_x, user_t, distribution = input$distribution, standard_deviation = input$standard_deviation, plot.weight = FALSE)  # Error: Disallowed Parameters. Please change!
+                    res2 <- w_sliding.reflim(user_x, user_t, distribution = input$distribution, standard_deviation = input$comparison_sd, plot.weight = FALSE)
                     alist_custom_sd_plot <- gg_alist_custom_sd(res1, res2, log.scale = log_scale_bool)
                     plot(alist_custom_sd_plot)
                     
@@ -522,6 +572,9 @@ server <- function(input, output, session) {
 # Warning in regularize.values(x, y, ties, missing(ties), na.rm = na.rm) :collapsing to unique 'x' values
 
 
+####################################### Run the application ############################################
+
+shinyApp(ui = ui, server = server)
 
 
 
@@ -532,7 +585,7 @@ server <- function(input, output, session) {
 #' @description 
 #' This function is similar to the w_sliding.reflim function, but only records information about the weights of each point in each loop
 
-# w_sliding.reflim.plot <- function(x,covariate,verteilung = "truncated_gaussian", standard_deviation = 5, vertex1 = NULL, vertex2 = NULL, window.size=NULL,step.width=NULL,lognormal=NULL,perc.trunc=2.5,n.min.window=200,n.min=100,apply.rounding=FALSE)
+# w_sliding.reflim.plot <- function(x,covariate,distribution = "truncated_gaussian", standard_deviation = 5, vertex1 = NULL, vertex2 = NULL, window.size=NULL,step.width=NULL,lognormal=NULL,perc.trunc=2.5,n.min.window=200,n.min=100,apply.rounding=FALSE)
 # {
 #     is.nona <- !is.na(x) & !is.na(covariate)
 #     xx <- x[is.nona]
@@ -569,7 +622,7 @@ server <- function(input, output, session) {
 #     
 #     loop <- 0
 #     
-#     if (verteilung == "gaussian") {
+#     if (distribution == "gaussian") {
 #         print("gaussian")
 #         w_function <- makeWeightFunction("gaussian", sigma = standard_deviation)
 #         step_index <- 1
@@ -606,19 +659,19 @@ server <- function(input, output, session) {
 #                     x.interval[[i]] <- xxx 
 #                     
 #                     
-#                     if (verteilung == "truncated_gaussian") {
-#                         w_function <- makeWeightFunction(verteilung, sigma = standard_deviation)
+#                     if (distribution == "truncated_gaussian") {
+#                         w_function <- makeWeightFunction(distribution, sigma = standard_deviation)
 #                         www <- w_function(interval_cov, mean = (min(interval_cov) + max(interval_cov)) / 2)
-#                     } else if (verteilung == "triangular") {
+#                     } else if (distribution == "triangular") {
 #                         vertex1 <- if (is.null(vertex1)) 0.5 else vertex1
 #                         
 #                         start_point.value <- min(interval_cov)
 #                         end_point.value <- max(interval_cov)
 #                         vertex1.value <- (end_point.value - start_point.value) * vertex1 + start_point.value
 # 
-#                         w_function <- makeWeightFunction(verteilung, a = start_point.value, b = vertex1.value, c = end_point.value)
+#                         w_function <- makeWeightFunction(distribution, a = start_point.value, b = vertex1.value, c = end_point.value)
 #                         www <- w_function(interval_cov)
-#                     } else if (verteilung == "trapezoidal") {
+#                     } else if (distribution == "trapezoidal") {
 #                         vertex1 <- if (is.null(vertex1)) 0.3 else vertex1
 #                         vertex2 <- if (is.null(vertex2)) 0.6 else vertex2
 #                         
@@ -627,7 +680,7 @@ server <- function(input, output, session) {
 #                         vertex1.value <- (end_point.value - start_point.value) * vertex1 + start_point.value
 #                         vertex2.value <- (end_point.value - vertex1.value) * vertex2 + start_point.value
 #                         
-#                         w_function <- makeWeightFunction(distribution = verteilung, a = start_point.value, b = vertex1.value, c = vertex2.value, d = end_point.value)
+#                         w_function <- makeWeightFunction(distribution = distribution, a = start_point.value, b = vertex1.value, c = vertex2.value, d = end_point.value)
 #                         www <- w_function(interval_cov)
 #                     }
 #                     w.interval[[i]] <- www
@@ -663,19 +716,19 @@ server <- function(input, output, session) {
 #                     xxx <- xx[is.in.interval]
 #                     x.interval[[ind]] <- xxx
 #                     
-#                     if (verteilung == "truncated_gaussian") {
-#                         w_function <- makeWeightFunction(distribution = verteilung, sigma = standard_deviation)
+#                     if (distribution == "truncated_gaussian") {
+#                         w_function <- makeWeightFunction(distribution = distribution, sigma = standard_deviation)
 #                         www <- w_function(interval_cov, mean = (min(interval_cov) + max(interval_cov)) / 2)
-#                     } else if (verteilung == "triangular") {
+#                     } else if (distribution == "triangular") {
 #                         vertex1 <- if (is.null(vertex1)) 0.5 else vertex1
 #                         
 #                         start_point.value <- min(interval_cov)
 #                         end_point.value <- max(interval_cov)
 #                         vertex1.value <- (end_point.value - start_point.value) * vertex1 + start_point.value
 # 
-#                         w_function <- makeWeightFunction(verteilung, a = start_point.value, b = vertex1.value, c = end_point.value)
+#                         w_function <- makeWeightFunction(distribution, a = start_point.value, b = vertex1.value, c = end_point.value)
 #                         www <- w_function(interval_cov)
-#                     } else if (verteilung == "trapezoidal") {
+#                     } else if (distribution == "trapezoidal") {
 #                         vertex1 <- if (is.null(vertex1)) 0.3 else vertex1
 #                         vertex2 <- if (is.null(vertex2)) 0.6 else vertex2
 #                         
@@ -684,7 +737,7 @@ server <- function(input, output, session) {
 #                         vertex1.value <- (end_point.value - start_point.value) * vertex1 + start_point.value
 #                         vertex2.value <- (end_point.value - vertex1.value) * vertex2 + start_point.value
 # 
-#                         w_function <- makeWeightFunction(distribution = verteilung, a = start_point.value, b = vertex1.value, c = vertex2.value, d = end_point.value)
+#                         w_function <- makeWeightFunction(distribution = distribution, a = start_point.value, b = vertex1.value, c = vertex2.value, d = end_point.value)
 # 
 #                         www <- w_function(interval_cov)
 #                     }
@@ -741,6 +794,3 @@ server <- function(input, output, session) {
 #     
 #     return(res)
 # }
-
-
-shinyApp(ui = ui, server = server)
