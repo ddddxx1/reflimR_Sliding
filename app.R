@@ -276,7 +276,7 @@ server <- function(input, output, session) {
     # Calculate res and segment_indices
     data <- reactive({
         user_data <- reactive_data()
-        print(user_data)
+        # print(user_data)
         user_x <- user_data$x
         user_t <- user_data$t
 
@@ -303,7 +303,6 @@ server <- function(input, output, session) {
         
         
         result <- tryCatch({
-            print("Debug: Starting data processing")
             print(
                 paste(
                     "Input values:",
@@ -316,7 +315,6 @@ server <- function(input, output, session) {
                 )
             )
             if (input$distribution == "truncated_gaussian") {
-                print("Debug: Processing truncated_gaussian")
                 res <- w_sliding.reflim.plot(
                     user_x,
                     user_t,
@@ -325,7 +323,6 @@ server <- function(input, output, session) {
                     window.size = window_size,
                     step.width = step_width
                 )
-                print("Debug: Completed w_sliding.reflim.plot for truncated_gaussian")
             } else if (input$distribution == "gaussian") {
                 res <- w_sliding.reflim.plot(
                     user_x,
@@ -367,8 +364,6 @@ server <- function(input, output, session) {
             list(res = res, segment_indices = segment_indices, segment_count = segment_count, error = NULL)
         }, error = function(e) {
             # Returns an error message
-            print(paste("Debug: Error ocurred: ", e$message))
-            print(paste("Debug: Error call:", deparse(e$call)))
             list(res = NULL, segment_indices = NULL, segment_count = 0, error = e$message)
         })
         return(result)  # caliper: result -> null
@@ -440,12 +435,13 @@ server <- function(input, output, session) {
         plot_info <- plot_data()
         
         if (!is.null(data_info$error)) {
-            # return("Error: Disallowed Parameters. Please change!")  # show this error in trapzoidal
-            return(paste("Error in first plot:", data_info$error))
+            return("Error: Disallowed Parameters. Please change!")  # show this error in trapzoidal
+            # return(paste("Error in first plot:", data_info$error))
         }
         if (!is.null(plot_info$error)) {
             return(paste("Error: ", plot_info$error))
         }
+        
         # if (!is.null(data_info$error) || !is.null(plot_info$error)) {
         #     return("Error: Disallowed Parameters. Please change!")
         # }
@@ -466,17 +462,16 @@ server <- function(input, output, session) {
              col = "darkblue")
     })
 
-    output$scatterPlot <- renderPlot({  # first plot    Error in first plot: 'by' argument is much too small
-        print("Debug: Rendering Scatter-Plot ----- by argument")
+    output$scatterPlot <- renderPlot({  # first plot
         par(mar = c(3,3,3,8))
-        data_info <- data() # Error: data_info is null
+        data_info <- data()
         
-        # if (!is.null(data_info$error)) {
-        #     return(NULL)
-        # }
+        if (!is.null(data_info$error)) {
+            return(NULL)
+        }
         
         res <- data_info$res
-        print(data_info)
+        # print(data_info)
         segment_indices <- data_info$segment_indices
         segment_count <- data_info$segment_count
         
@@ -490,6 +485,7 @@ server <- function(input, output, session) {
         end_row <- segment_indices[segment_index]
         
         segment_data <- res[start_row:end_row, ]
+        print(paste("window_size:", end_row - start_row, "from:", start_row, "to:", end_row))
         w_values <- as.numeric(segment_data$w)
         
         total_w <- sum(w_values, na.rm = TRUE)
@@ -499,7 +495,6 @@ server <- function(input, output, session) {
         w_colors <- color_palette[cut(w_values, breaks = 100, labels = FALSE)]
 
         par(mar = c(3, 3, 3, 8))
-        print("Debug: begin plot ----- by argument")
         
         plot(as.numeric(segment_data$t),
              as.numeric(segment_data$x),

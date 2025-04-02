@@ -39,14 +39,12 @@ run <- function(x, t, distribution = "truncated_gaussian", log.scale = FALSE, st
     #     res <- w_sliding.reflim(x, t, distribution = distribution, a = a, b = b, c = c, d = d, window.size = window.size, step.width = step.width, lognormal = lognormal)
     #     gg_alist(result.sliding.reflim = res)
     
-    print("caliper error finding (in run function)")
     # x <- as.numeric(x)
     # t <- as.integer(t)
     par(mar = c(3, 3, 3, 3))
     if (is.null(standard_deviation_compare)) {  # no comparison
         print("no comparison")
         res <- w_sliding.reflim(x, t, distribution = distribution, standard_deviation = standard_deviation, vertex1 = vertex1, vertex2 = vertex2, window.size = window.size, step.width = step.width, lognormal = lognormal)
-        print("caliper error finding (after res)")
         gg_alist(result.sliding.reflim = res, log.scale = log.scale)
     } else {
         res1 <- w_sliding.reflim(x, t, distribution = distribution, standard_deviation = standard_deviation, vertex1 = vertex1, vertex2 = vertex2, window.size = window.size, step.width = step.width, lognormal = lognormal)
@@ -937,11 +935,8 @@ w_sliding.reflim.plot <- function(x,covariate,distribution = "truncated_gaussian
                     x.interval[[ind]] <- xxx
                     
                     if (distribution == "truncated_gaussian") {
-                        print("caliper error finding (truncated_gaussian w_sliding.plot)")
                         w_function <- makeWeightFunction(distribution = distribution, sigma = standard_deviation)
-                        print("caliper error finding (after makeWeightFunction)")
                         www <- w_function(interval_cov, mean = (min(interval_cov) + max(interval_cov)) / 2)
-                        print("caliper error finding (after w_function)")
                     } else if (distribution == "triangular") {
                         vertex1 <- if (is.null(vertex1)) 0.5 else vertex1
                         
@@ -970,9 +965,7 @@ w_sliding.reflim.plot <- function(x,covariate,distribution = "truncated_gaussian
                     
                     sum.www[ind] <- www_sum
                     
-                    print("caliper error finding (before w_reflim)")
                     res.reflim <- w_reflim(xxx, www, n.min = n.min, apply.rounding = apply.rounding, lognormal = lognormal, plot.all = FALSE)
-                    print("caliper error finding (after w_reflim)")
                     loop <- loop + 1
                     
                     indl <- indl + 1
@@ -1017,7 +1010,7 @@ w_sliding.reflim.plot <- function(x,covariate,distribution = "truncated_gaussian
     # 
     # }
     
-    
+    #optimized
     all_dfs <- vector("list", loop * 2)  # Leave space for data and separators
     df_count <- 0
 
@@ -1061,7 +1054,6 @@ w_sliding.reflim.plot <- function(x,covariate,distribution = "truncated_gaussian
 w_reflim <- function (x, x_weight, lognormal = NULL, targets = NULL, perc.trunc = 2.5,
              n.min = 200, apply.rounding = TRUE, plot.it = FALSE, plot.all = FALSE, 
              print.n = TRUE, main = "reference limits", xlab = "x") {
-    # print("----- caliper ----- main.R ----- w_reflim -----")
     na_indices <- is.na(x)
     x_clean <- x[!na_indices]
     ww_clean <- x_weight[!na_indices]
@@ -1217,7 +1209,7 @@ w_reflim <- function (x, x_weight, lognormal = NULL, targets = NULL, perc.trunc 
         if (plot.it) {
             rh <- ri_hist(x_clean, lognormal = lognormal, stats = res.qq[1:2],
                           limits = res.qq[3:4], targets = targets, perc.norm = res.trunc$perc.norm,
-                          main = main, xlab = xlab) # caliper: 'by' argument is much too small
+                          main = main, xlab = xlab)
             if (print.n) {
                 legend("topright", legend = paste("n = ", n.trunc,
                                                   "after truncation"), bty = "n", cex = 0.75)
@@ -1242,7 +1234,6 @@ w_reflim <- function (x, x_weight, lognormal = NULL, targets = NULL, perc.trunc 
     result$perc.norm = res.trunc$perc.norm
     result$confidence.int = res.ci[1:4]
     result$interpretation = dev.lim
-    # print("----- caliper ----- main.R ----- end w_reflim #####")
     return(result)
 } 
 
@@ -1261,7 +1252,6 @@ w_reflim <- function (x, x_weight, lognormal = NULL, targets = NULL, perc.trunc 
 w_bowley <- function(x, x_weight) {
     w_quantiles <- wtd.quantile(x, x_weight, probs = c(0.25, 0.5, 0.75))
     if (abs(w_quantiles[3] - w_quantiles[2]) < .Machine$double.eps) {
-        # print("caliper error finding (w_bowley end and return 0)")
         return(0)
     }
     return((w_quantiles[3] + w_quantiles[1] - 2 * w_quantiles[2]) / (w_quantiles[3] -
