@@ -1,4 +1,4 @@
-#shiny-improvement
+#debug-CALIPER-2
 
 #' run
 #' 
@@ -16,7 +16,6 @@
 #' @export
 
 run <- function(x, t, distribution = "truncated_gaussian", log.scale = FALSE, standard_deviation = 5, standard_deviation_compare = NULL, vertex1 = NULL, vertex2 = NULL, window.size=NULL,step.width=NULL,lognormal=NULL,perc.trunc=2.5,n.min.window=200,n.min=100,apply.rounding=FALSE) {
-    par(mar = c(3,3,3,3))
     # if (distribution == "truncated_gaussian") {
     #     if (standard_deviation == 5) {
     #         res <- w_sliding.reflim(x, t,distribution = distribution, window.size = window.size, step.width = step.width, lognormal = lognormal)
@@ -39,7 +38,12 @@ run <- function(x, t, distribution = "truncated_gaussian", log.scale = FALSE, st
     # } else {
     #     res <- w_sliding.reflim(x, t, distribution = distribution, a = a, b = b, c = c, d = d, window.size = window.size, step.width = step.width, lognormal = lognormal)
     #     gg_alist(result.sliding.reflim = res)
+    
+    # x <- as.numeric(x)
+    # t <- as.integer(t)
+    par(mar = c(3, 3, 3, 3))
     if (is.null(standard_deviation_compare)) {  # no comparison
+        print("no comparison")
         res <- w_sliding.reflim(x, t, distribution = distribution, standard_deviation = standard_deviation, vertex1 = vertex1, vertex2 = vertex2, window.size = window.size, step.width = step.width, lognormal = lognormal)
         gg_alist(result.sliding.reflim = res, log.scale = log.scale)
     } else {
@@ -843,7 +847,7 @@ w_sliding.reflim.plot <- function(x,covariate,distribution = "truncated_gaussian
         for (i in seq(min(covcomp), max(covcomp), length.out = n.steps)) {  # Generate an equally spaced sequence from the minimum to the maximum value of covcomp.
             www <- w_function(covcomp, mean = i)
             
-            res.reflim <- w_reflim(xx, www, n.min = n.min, apply.rounding = apply.rounding, lognormal = lognormal, plot.all = TRUE)
+            res.reflim <- w_reflim(xx, www, n.min = n.min, apply.rounding = apply.rounding, lognormal = lognormal, plot.all = FALSE)
             loop <- loop + 1
             
             x.interval[[step_index]] <- xx
@@ -892,7 +896,7 @@ w_sliding.reflim.plot <- function(x,covariate,distribution = "truncated_gaussian
                         start_point.value <- min(interval_cov)
                         end_point.value <- max(interval_cov)
                         vertex1.value <- (end_point.value - start_point.value) * vertex1 + start_point.value
-                        vertex2.value <- (end_point.value - vertex1.value) * vertex2 + start_point.value
+                        vertex2.value <- (end_point.value - start_point.value) * vertex2 + start_point.value
                         
                         w_function <- makeWeightFunction(distribution = distribution, a = start_point.value, b = vertex1.value, c = vertex2.value, d = end_point.value)
                         www <- w_function(interval_cov)
@@ -903,7 +907,7 @@ w_sliding.reflim.plot <- function(x,covariate,distribution = "truncated_gaussian
                     
                     sum.www[i] <- www_sum
                     
-                    res.reflim <- w_reflim(xxx, www, n.min = n.min, apply.rounding = apply.rounding, lognormal = lognormal, plot.all = TRUE)
+                    res.reflim <- w_reflim(xxx, www, n.min = n.min, apply.rounding = apply.rounding, lognormal = lognormal, plot.all = FALSE)
                     loop <- loop + 1
                     
                 } else {
@@ -949,7 +953,7 @@ w_sliding.reflim.plot <- function(x,covariate,distribution = "truncated_gaussian
                         start_point.value <- min(interval_cov)
                         end_point.value <- max(interval_cov)
                         vertex1.value <- (end_point.value - start_point.value) * vertex1 + start_point.value
-                        vertex2.value <- (end_point.value - vertex1.value) * vertex2 + start_point.value
+                        vertex2.value <- (end_point.value - start_point.value) * vertex2 + start_point.value
                         
                         w_function <- makeWeightFunction(distribution = distribution, a = start_point.value, b = vertex1.value, c = vertex2.value, d = end_point.value)
                         
@@ -961,8 +965,7 @@ w_sliding.reflim.plot <- function(x,covariate,distribution = "truncated_gaussian
                     
                     sum.www[ind] <- www_sum
                     
-                    
-                    res.reflim <- w_reflim(xxx, www, n.min = n.min, apply.rounding = apply.rounding, lognormal = lognormal, plot.all = TRUE)
+                    res.reflim <- w_reflim(xxx, www, n.min = n.min, apply.rounding = apply.rounding, lognormal = lognormal, plot.all = FALSE)
                     loop <- loop + 1
                     
                     indl <- indl + 1
@@ -983,28 +986,57 @@ w_sliding.reflim.plot <- function(x,covariate,distribution = "truncated_gaussian
     
     last_was_separetor <- TRUE
     
+    # for (i in 1:loop) { # caliper: long time waiting
+    #     print(paste("i = ", i))
+    #     temp_df <- data.frame(
+    #         x = x.interval[[i]],
+    #         t = t.interval[[i]],
+    #         w = w.interval[[i]]
+    #     )
+    # 
+    #     res <- rbind(res, temp_df)
+    # 
+    #     if (nrow(temp_df) > 0) {
+    #         res <- rbind(res, temp_df)
+    # 
+    #         if (!last_was_separetor) {
+    #             separator <- data.frame(x = "---", t = "---", w = "---")
+    #             res <- rbind(res, separator)
+    #         }
+    #         last_was_separetor <- FALSE
+    #     } else {
+    #         last_was_separetor <- TRUE
+    #     }
+    # 
+    # }
+    
+    #optimized
+    all_dfs <- vector("list", loop * 2)  # Leave space for data and separators
+    df_count <- 0
+
     for (i in 1:loop) {
-        temp_df <- data.frame(
-            x = x.interval[[i]],
-            t = t.interval[[i]],
-            w = w.interval[[i]]
-        )
-        
-        res <- rbind(res, temp_df)
-        
-        if (nrow(temp_df) > 0) {
-            res <- rbind(res, temp_df)
-            
-            if (!last_was_separetor) {
-                separator <- data.frame(x = "---", t = "---", w = "---")
-                res <- rbind(res, separator)
+        if (!is.null(x.interval[[i]]) && !is.null(t.interval[[i]]) && !is.null(w.interval[[i]])) {
+            df_count <- df_count + 1
+            all_dfs[[df_count]] <- data.frame(
+                x = x.interval[[i]],
+                t = t.interval[[i]],
+                w = w.interval[[i]]
+            )
+
+            # Add separators only when needed
+            if (i < loop && !is.null(x.interval[[i+1]])) {
+                df_count <- df_count + 1
+                all_dfs[[df_count]] <- data.frame(
+                    x = "---",
+                    t = "---",
+                    w = "---"
+                )
             }
-            last_was_separetor <- FALSE
-        } else {
-            last_was_separetor <- TRUE
         }
-        
     }
+
+    # Merge all data frames at once
+    res <- do.call(rbind, all_dfs[1:df_count])
     return(res)
 }
 
@@ -1128,6 +1160,10 @@ w_reflim <- function (x, x_weight, lognormal = NULL, targets = NULL, perc.trunc 
     res.qq <- w_truncated_qqplot(res.trunc$trunc, res.trunc$w_trunc, lognormal = lognormal,
                                  perc.trunc = perc.trunc, n.min = n.min, apply.rounding = apply.rounding,
                                  plot.it = FALSE)$result
+    if (!is.na(res.qq[3]) && !is.na(res.qq[4]) && res.qq[3] >= res.qq[4]) { # fixed: upper limit must > lower limit
+        warning("Lower limit >= upper limit. Adjusting limits.")
+        res.qq[4] <- res.qq[3] + 1
+    }
     res.ci <- conf_int95(n = n, lower.limit = as.numeric(res.qq[3]),
                          upper.limit = as.numeric(res.qq[4]), lognormal = lognormal,
                          apply.rounding = apply.rounding)
@@ -1215,8 +1251,11 @@ w_reflim <- function (x, x_weight, lognormal = NULL, targets = NULL, perc.trunc 
 
 w_bowley <- function(x, x_weight) {
     w_quantiles <- wtd.quantile(x, x_weight, probs = c(0.25, 0.5, 0.75))
+    if (abs(w_quantiles[3] - w_quantiles[2]) < .Machine$double.eps) {
+        return(0)
+    }
     return((w_quantiles[3] + w_quantiles[1] - 2 * w_quantiles[2]) / (w_quantiles[3] -
-                                                                         w_quantiles[2])) # ERROR: quan[3] = quan[2]
+                                                                         w_quantiles[2])) # fixed: quan[3] = quan[2] TRUE/FALSE needed
 }
 
 
@@ -1348,6 +1387,15 @@ w_iboxplot <- function(x, x_weight, lognormal = NULL, perc.trunc = 2.5,
         qf <- ifelse(i == 1, qf <- qnorm(q.trunc) / qnorm(0.25),
                     qf <- qnorm(q.trunc) / qnorm(0.25 * (1 - q.trunc / 50)
                                                 + q.trunc))
+        
+        if (all(x_weight == 0)) {
+            warning("All weights are zero. Use equal weights.")
+            x_weight <- rep(1/length(x), length(x))
+        }
+        # print("x:")
+        # print(x)
+        # print("x_weight:")
+        # print(x_weight)
         Q <- wtd.quantile(x, x_weight, c(0.25, 0.5, 0.75))
         var1 <- Q[2] - Q[1]
         var2 <- Q[3] - Q[2]

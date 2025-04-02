@@ -1,4 +1,4 @@
-#shiny-improvement
+#debug-CALIPER-2
 
 
 ####################################### WEILCOM TO THE SHINY APP ############################################
@@ -276,6 +276,7 @@ server <- function(input, output, session) {
     # Calculate res and segment_indices
     data <- reactive({
         user_data <- reactive_data()
+        # print(user_data)
         user_x <- user_data$x
         user_t <- user_data$t
 
@@ -302,6 +303,17 @@ server <- function(input, output, session) {
         
         
         result <- tryCatch({
+            print(
+                paste(
+                    "Input values:",
+                    "window_size:",
+                    window_size,
+                    "step_width:",
+                    step_width,
+                    "standard_deviation:",
+                    standard_deviation
+                )
+            )
             if (input$distribution == "truncated_gaussian") {
                 res <- w_sliding.reflim.plot(
                     user_x,
@@ -354,7 +366,7 @@ server <- function(input, output, session) {
             # Returns an error message
             list(res = NULL, segment_indices = NULL, segment_count = 0, error = e$message)
         })
-        return(result)
+        return(result)  # caliper: result -> null
     })
 
     plot_data <- reactive({
@@ -424,11 +436,12 @@ server <- function(input, output, session) {
         
         if (!is.null(data_info$error)) {
             return("Error: Disallowed Parameters. Please change!")  # show this error in trapzoidal
-            # return(paste("Error:", data_info$error))
+            # return(paste("Error in first plot:", data_info$error))
         }
         if (!is.null(plot_info$error)) {
             return(paste("Error: ", plot_info$error))
         }
+        
         # if (!is.null(data_info$error) || !is.null(plot_info$error)) {
         #     return("Error: Disallowed Parameters. Please change!")
         # }
@@ -458,6 +471,7 @@ server <- function(input, output, session) {
         }
         
         res <- data_info$res
+        # print(data_info)
         segment_indices <- data_info$segment_indices
         segment_count <- data_info$segment_count
         
@@ -471,6 +485,7 @@ server <- function(input, output, session) {
         end_row <- segment_indices[segment_index]
         
         segment_data <- res[start_row:end_row, ]
+        print(paste("window_size:", end_row - start_row, "from:", start_row, "to:", end_row))
         w_values <- as.numeric(segment_data$w)
         
         total_w <- sum(w_values, na.rm = TRUE)
