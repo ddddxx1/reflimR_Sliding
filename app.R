@@ -1,7 +1,7 @@
-#debug-CALIPER-2
+#weight-plot-optimization
 
 
-####################################### WEILCOM TO THE SHINY APP ############################################
+####################################### WEILCOME TO THE SHINY APP ###########################################
 ####################################### from Xufan Dong (2025) ##############################################
 #############################################################################################################
 
@@ -70,7 +70,7 @@ t <- reflimR::livertests$Age
 ####################################### User interface ############################################
 
 ui <- fluidPage(
-    titlePanel("Scatter Plot by Segment"),
+    titlePanel("reflimR_Sliding"),
 
     sidebarLayout(
         sidebarPanel(
@@ -85,8 +85,8 @@ ui <- fluidPage(
             actionButton('reset', 'Reset Input', icon = icon("trash")),
             selectInput("separator", "Select Separator:", choices = c("Comma(,)" = ",", "Semicolon(;)" = ";"), selected = ";"),
             
-            selectInput("xcol", "Select X Column", choices = NULL),
-            selectInput("tcol", "Select T Column", choices = NULL),
+            selectInput("xcol", "Select x column:", choices = NULL),
+            selectInput("tcol", "Select covariate column:", choices = NULL),
 
             sliderInput("segment",
                         "Choose Segment:",
@@ -494,7 +494,7 @@ server <- function(input, output, session) {
         color_palette <- colorRampPalette(c("blue", "red"))(100)
         w_colors <- color_palette[cut(w_values, breaks = 100, labels = FALSE)]
 
-        par(mar = c(3, 3, 3, 8))
+        # par(mar = c(3, 3, 3, 8))
         
         plot(as.numeric(segment_data$t),
              as.numeric(segment_data$x),
@@ -504,21 +504,30 @@ server <- function(input, output, session) {
              pch = 16,
              col = w_colors)
         
-        legend("topright", 
-               inset = c(-0.2, 0), 
-               legend = c("w = 1", "w = 0.8", "w = 0.5"), 
-               col = color_palette[c(100, 80, 50)],  
-               pch = 16,       
-               title = "Weighting",     
+        legend("topright",
+               inset = c(-0.2, 0),
+               legend = c("w = 1", "w = 0.8", "w = 0.5"),
+               col = color_palette[c(100, 80, 50)],
+               pch = 16,
+               title = "Weighting",
                xpd = TRUE,
-               bty = "n")   
+               bty = "n")
         
-        text(x = par("usr")[2] - 0.3 * diff(par("usr")[1:2]),  
-             y = par("usr")[3] + 0.05 * diff(par("usr")[3:4]),
-             labels = paste("Total w:", round(total_w, 2)), 
-             pos = 4, 
-             col = "black",
-             cex = 1.2)
+        # text(x = par("usr")[2] - 0.3 * diff(par("usr")[1:2]),  
+        #      y = par("usr")[3] + 0.05 * diff(par("usr")[3:4]),
+        #      labels = paste("Total w:", round(total_w, 2)), 
+        #      pos = 4, 
+        #      col = "black",
+        #      cex = 1.2)
+        
+        legend("bottomright",
+               inset = c(-0.25, 0),
+               legend = paste(round(total_w, 2)),
+               col = "black",
+               pch = NA,
+               title = "Total weight sum:",
+               xpd = TRUE,
+               bty = "n")
     })
     
     
