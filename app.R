@@ -161,6 +161,7 @@ ui <- fluidPage(
                          fluidRow(
                              column(12, plotOutput("scatterPlot")),
                              column(12, div(style = "color: red;", textOutput("errorMessage"))),
+                             column(12, plotOutput("weightDistPlot")),
                              column(12, withSpinner(plotOutput("scatterPlot2")))
                          )
                 ),
@@ -537,6 +538,55 @@ server <- function(input, output, session) {
     #           <p style='color:green;'>Weighting >= 0.5 and < 0.8</p>
     #           <p style='color:black;'>Weighting < 0.5</p>")
     # })
+    
+    output$weightDistPlot <- renderPlot({
+        par(mar = c(3,3,3,8))
+        data_info <- data()
+        
+        if (!is.null(data_info$error)) {
+            return(NULL)
+        }
+        
+        res <- data_info$res
+        segment_indices <- data_info$segment_indices
+        segment_count <- data_info$segment_count
+        segment_index <- input$segment
+        
+        if (segment_index == 1) {
+            start_row <- 1
+        } else {
+            start_row <- segment_indices[segment_index - 1] + 2
+        }
+        end_row <- segment_indices[segment_index]
+        
+        segment_data <- res[start_row:end_row, ]
+        interval_cov <- as.numeric(segment_data$t)
+        www <- as.numeric(segment_data$w)
+        
+        plot(interval_cov, www, 
+             type = "l", 
+             col = "blue", 
+             lwd = 2, 
+             main = paste("Weight Distribution - Segment", segment_index),
+             xlab = "Interval Covariate",
+             ylab = "Weight")
+        points(interval_cov, www, col = "red")
+        
+        www_sum <- sum(www, na.rm = TRUE)
+        # text(x = mean(interval_cov), 
+        #      y = mean(www), 
+        #      labels = paste("Sum of weights =", round(www_sum, 2)),
+        #      col = "darkgreen", 
+        #      cex = 1.2)
+        legend("bottomright",
+               inset = c(-0.25, 0),
+               legend = paste(round(www_sum, 2)),
+               col = "black",
+               pch = NA,
+               title = "Total weight sum:",
+               xpd = TRUE,
+               bty = "n")
+    })
 
     output$scatterPlot2 <- renderPlot({
         alistplot <- plot_data()
