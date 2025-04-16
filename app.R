@@ -178,7 +178,7 @@ ui <- fluidPage(
                                  condition = "input.tabs == 'Comparison'",
                                  column(12, div(style = "color: red;", textOutput("falseDistribution"))),
                                  # column(12, div(style = "color: red;", textOutput("errorMessage"))),
-                                 column(12, numericInput("comparison_sd", "Comparison SD :", value = 6)),
+                                 column(12, numericInput("comparison_sd", "Comparison standard deviation :", value = 6)),
                                  column(12, actionButton("compare", "Compare")),
                                  column(12, div(style = "color: red;", textOutput("paError"))),
                                  column(12, plotOutput("comparisonPlot"))
@@ -204,6 +204,7 @@ server <- function(input, output, session) {
         updateTextInput(session, "step_width_triangular", value = "")
         updateTextInput(session, "window_size_trapezoidal", value = "")
         updateTextInput(session, "step_width_trapezoidal", value = "")
+        updateNumericInput(session, "comparison_sd", value = 6)
         
         if (input$distribution == "truncated_gaussian") {
             # updateTextInput(session, "window_size", value = "")
@@ -548,21 +549,14 @@ server <- function(input, output, session) {
                xpd = TRUE,
                bty = "n")
         
-        # text(x = par("usr")[2] - 0.3 * diff(par("usr")[1:2]),  
-        #      y = par("usr")[3] + 0.05 * diff(par("usr")[3:4]),
-        #      labels = paste("Total w:", round(total_w, 2)), 
-        #      pos = 4, 
-        #      col = "black",
-        #      cex = 1.2)
-        
-        legend("bottomright",
-               inset = c(-0.25, 0),
-               legend = paste(round(total_w, 2)),
-               col = "black",
-               pch = NA,
-               title = "Total weight sum:",
-               xpd = TRUE,
-               bty = "n")
+        # legend("bottomright",
+        #        inset = c(-0.25, 0),
+        #        legend = paste(round(total_w, 2)),
+        #        col = "black",
+        #        pch = NA,
+        #        title = "Total weight sum:",
+        #        xpd = TRUE,
+        #        bty = "n")
     })
     
     
@@ -652,29 +646,34 @@ server <- function(input, output, session) {
             user_data <- reactive_data()
             user_x <- user_data$x
             user_t <- user_data$t
-            
+
             output$comparisonPlot <- renderPlot({
+                standard_deviation <- switch(input$distribution,
+                                             "truncated_gaussian" = input$standard_deviation_truncated,
+                                             "gaussian" = input$standard_deviation_gaussian,
+                                             NULL)
                 tryCatch({
                     log_scale_bool <- ifelse(input$log_scale == "yes", TRUE, FALSE)
                     print(paste("log_scale_bool:", log_scale_bool))
-                        
-                    res1 <- w_sliding.reflim(user_x, user_t, distribution = input$distribution, standard_deviation = input$standard_deviation, plot.weight = FALSE)  # Error: Disallowed Parameters. Please change!
+
+                    res1 <- w_sliding.reflim(user_x, user_t, distribution = input$distribution, standard_deviation = standard_deviation, plot.weight = FALSE)
                     res2 <- w_sliding.reflim(user_x, user_t, distribution = input$distribution, standard_deviation = input$comparison_sd, plot.weight = FALSE)
                     alist_custom_sd_plot <- gg_alist_custom_sd(res1, res2, log.scale = log_scale_bool)
                     plot(alist_custom_sd_plot)
-                    
+
                     output$paError <- renderText({""})
                 }, error = function(e) {
                     output$paError <- renderText({
                         return("Error: Disallowed Parameters. Please change!")
                     })
                 })
-                
+
             })
         } else {
             showNotification("Comparison only available for Gaussian or Truncated Gaussian distributions", type = "error")
         }
     })
+
 }
 
 # Warning in regularize.values(x, y, ties, missing(ties), na.rm = na.rm) :collapsing to unique 'x' values

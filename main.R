@@ -1390,7 +1390,7 @@ w_iboxplot <- function(x, x_weight, lognormal = NULL, perc.trunc = 2.5,
     w_truncate_x <- function(x, x_weight, i) {
         qf <- ifelse(i == 1, qf <- qnorm(q.trunc) / qnorm(0.25),
                     qf <- qnorm(q.trunc) / qnorm(0.25 * (1 - q.trunc / 50)
-                                                + q.trunc))
+                                                + q.trunc)) #todo
         
         if (all(x_weight == 0)) {
             warning("All weights are zero. Use equal weights.")
