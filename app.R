@@ -50,6 +50,12 @@ if (require("reflimR")) {
     install.packages("reflimR")
     library(reflimR)
 }
+if (require("shinyjs")) {
+    library(shinyjs)
+} else {
+    install.packages("shinyjs")
+    library(shinyjs)
+}
 
 if (require("shinycssloaders")) {
     library(shinycssloaders)
@@ -70,6 +76,7 @@ t <- reflimR::livertests$Age
 ####################################### User interface ############################################
 
 ui <- fluidPage(
+    useShinyjs(),
     titlePanel("reflimR_Sliding"),
 
     sidebarLayout(
@@ -101,7 +108,7 @@ ui <- fluidPage(
                 condition = "input.distribution == 'truncated_gaussian'",
                 textInput("window_size_truncated", "Window Size:", value = ""),
                 textInput("step_width_truncated", "Step Width:", value = ""),
-                numericInput("standard_deviation", "Standard deviation:", value = 5),
+                numericInput("standard_deviation_truncated", "Standard deviation:", value = 5),
                 radioButtons(
                     "log_scale",
                     "Log Scale:",
@@ -112,7 +119,7 @@ ui <- fluidPage(
             # for gaussian
             conditionalPanel(
                 condition = "input.distribution == 'gaussian'",
-                numericInput("standard_deviation",
+                numericInput("standard_deviation_gaussian",
                              "Standard deviation:",
                              value = 5),
                 radioButtons("log_scale", "Log Scale:", choices = c("No" = "no", "Yes" = "yes"), selected = "no")
@@ -230,6 +237,7 @@ server <- function(input, output, session) {
     
     observeEvent(input$reset, {
         values$upload_state <- 'reset'
+        shinyjs::reset("datafile")
     })
     
     dataset_input <- reactive({
@@ -302,8 +310,14 @@ server <- function(input, output, session) {
                              "trapezoidal" = if (nzchar(input$step_width_trapezoidal)) as.numeric(input$step_width_trapezoidal) else NULL,
                              NULL
         )
+        
+        standard_deviation <- switch(input$distribution,
+                                     "truncated_gaussian" = input$standard_deviation_truncated,
+                                     "gaussian" = input$standard_deviation_gaussian,
+                                     NULL
+        )
 
-        standard_deviation <- input$standard_deviation
+        # standard_deviation <- input$standard_deviation
         # a <- input$a
         vertex1 <- input$vertex1
         # c <- input$c
@@ -385,11 +399,11 @@ server <- function(input, output, session) {
         user_x <- user_data$x
         user_t <- user_data$t
 
-        if (is.na(input$standard_deviation)) {
-            standard_deviation <- NULL
-        } else {
-            standard_deviation <- input$standard_deviation
-        }
+        # if (is.na(input$standard_deviation)) {
+        #     standard_deviation <- NULL
+        # } else {
+        #     standard_deviation <- input$standard_deviation
+        # }
         
         window_size <- switch(input$distribution,
                               "truncated_gaussian" = if (nzchar(input$window_size_truncated)) as.numeric(input$window_size_truncated) else NULL,
@@ -404,8 +418,14 @@ server <- function(input, output, session) {
                              "trapezoidal" = if (nzchar(input$step_width_trapezoidal)) as.numeric(input$step_width_trapezoidal) else NULL,
                              NULL
         )
+        
+        standard_deviation <- switch(input$distribution,
+                                     "truncated_gaussian" = input$standard_deviation_truncated,
+                                     "gaussian" = input$standard_deviation_gaussian,
+                                     NULL
+        )
 
-        standard_deviation <- input$standard_deviation
+        # standard_deviation <- input$standard_deviation
         # a <- input$a
         vertex1 <- input$vertex1
         # c <- input$c
