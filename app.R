@@ -99,8 +99,8 @@ ui <- fluidPage(
             # for truncated_gaussian
             conditionalPanel(
                 condition = "input.distribution == 'truncated_gaussian'",
-                numericInput("window_size", "Window Size:", value = NULL),
-                numericInput("step_width", "Step Width:", value = NULL),
+                textInput("window_size_truncated", "Window Size:", value = ""),
+                textInput("step_width_truncated", "Step Width:", value = ""),
                 numericInput("standard_deviation", "Standard deviation:", value = 5),
                 radioButtons(
                     "log_scale",
@@ -120,8 +120,8 @@ ui <- fluidPage(
             # for triangular
             conditionalPanel(
                 condition = "input.distribution == 'triangular'",
-                numericInput("window_size", "Window Size:", value = NULL),
-                numericInput("step_width", "Step Width:", value = NULL),
+                textInput("window_size_triangular", "Window Size:", value = ""),
+                textInput("step_width_triangular", "Step Width:", value = ""),
                 # numericInput("a", "Parameter a:", value = 0),
                 numericInput("vertex1", "Vertex:", value = 0.5),
                 # numericInput("c", "Paramater c:", value = 1)
@@ -135,8 +135,8 @@ ui <- fluidPage(
             # for trapezoidal
             conditionalPanel(
                 condition = "input.distribution == 'trapezoidal'",
-                numericInput("window_size", "Window Size:", value = NULL),
-                numericInput("step_width", "Step Width:", value = NULL),
+                textInput("window_size_trapezoidal", "Window Size:", value = ""),
+                textInput("step_width_trapezoidal", "Step Width:", value = ""),
                 # numericInput("a_trap", "Parameter a:", value = 0),
                 numericInput("vertex1_trap", "Top left vertex:", value = 0.3),
                 numericInput("vertex2_trap", "Top right vertex:", value = 0.6),
@@ -191,24 +191,31 @@ server <- function(input, output, session) {
     
     # Reset inputs when switching the distribution
     observeEvent(input$distribution, {
+        updateTextInput(session, "window_size_truncated", value = "")
+        updateTextInput(session, "step_width_truncated", value = "")
+        updateTextInput(session, "window_size_triangular", value = "")
+        updateTextInput(session, "step_width_triangular", value = "")
+        updateTextInput(session, "window_size_trapezoidal", value = "")
+        updateTextInput(session, "step_width_trapezoidal", value = "")
+        
         if (input$distribution == "truncated_gaussian") {
-            updateNumericInput(session, "window_size", value = NULL)
-            updateNumericInput(session, "step_width", value = NULL)
-            updateNumericInput(session, "standard_deviation", value = 5)
+            # updateTextInput(session, "window_size", value = "")
+            # updateTextInput(session, "step_width", value = "")
+            updateNumericInput(session, "standard_deviation_truncated", value = 5)
             updateRadioButtons(session, "log_scale", selected = "no")
         } else if (input$distribution == "gaussian") {
-            updateNumericInput(session, "standard_deviation", value = 5)
+            updateNumericInput(session, "standard_deviation_gaussian", value = 5)
             updateRadioButtons(session, "log_scale", selected = "no")
         } else if (input$distribution == "triangular") {
-            updateNumericInput(session, "window_size", value = NULL)
-            updateNumericInput(session, "step_width", value = NULL)
+            # updateTextInput(session, "window_size", value = "")
+            # updateTextInput(session, "step_width", value = "")
             updateNumericInput(session, "vertex1", value = 0.5)
             updateRadioButtons(session, "log_scale", selected = "no")
             showNotification("The vertex is the peak position of the triangular distribution function, with a value range of (0, 1]. 
                              When the input value is 0.5, the triangle is an isosceles triangle.",duration = 10, type = "message")
         } else if (input$distribution == "trapezoidal") {
-            updateNumericInput(session, "window_size", value = NULL)
-            updateNumericInput(session, "step_width", value = NULL)
+            # updateTextInput(session, "window_size", value = "")
+            # updateTextInput(session, "step_width", value = "")
             updateNumericInput(session, "vertex1_trap", value = 0.3)
             updateNumericInput(session, "vertex2_trap", value = 0.6)
             updateRadioButtons(session, "log_scale", selected = "no")
@@ -281,17 +288,20 @@ server <- function(input, output, session) {
         user_x <- user_data$x
         user_t <- user_data$t
 
-        if (is.na(input$window_size)) {
-            window_size <- NULL
-        } else {
-            window_size <- input$window_size
-        }
-        if (is.na(input$step_width)) {
-            step_width <- NULL
-        } else {
-            step_width <- input$step_width
-        }
         
+        window_size <- switch(input$distribution,
+                              "truncated_gaussian" = if (nzchar(input$window_size_truncated)) as.numeric(input$window_size_truncated) else NULL,
+                              "triangular" = if (nzchar(input$window_size_triangular)) as.numeric(input$window_size_triangular) else NULL,
+                              "trapezoidal" = if (nzchar(input$window_size_trapezoidal)) as.numeric(input$window_size_trapezoidal) else NULL,
+                              NULL
+        )
+        
+        step_width <- switch(input$distribution,
+                             "truncated_gaussian" = if (nzchar(input$step_width_truncated)) as.numeric(input$step_width_truncated) else NULL,
+                             "triangular" = if (nzchar(input$step_width_triangular)) as.numeric(input$step_width_triangular) else NULL,
+                             "trapezoidal" = if (nzchar(input$step_width_trapezoidal)) as.numeric(input$step_width_trapezoidal) else NULL,
+                             NULL
+        )
 
         standard_deviation <- input$standard_deviation
         # a <- input$a
@@ -306,7 +316,7 @@ server <- function(input, output, session) {
         result <- tryCatch({
             print(
                 paste(
-                    "Input values:",
+                    "-------------------Input values:",
                     "window_size:",
                     window_size,
                     "step_width:",
@@ -380,17 +390,21 @@ server <- function(input, output, session) {
         } else {
             standard_deviation <- input$standard_deviation
         }
-        if (is.na(input$window_size)) {
-            window_size <- NULL
-        } else {
-            window_size <- input$window_size
-        }
-        if (is.na(input$step_width)) {
-            step_width <- NULL
-        } else {
-            step_width <- input$step_width
-        }
         
+        window_size <- switch(input$distribution,
+                              "truncated_gaussian" = if (nzchar(input$window_size_truncated)) as.numeric(input$window_size_truncated) else NULL,
+                              "triangular" = if (nzchar(input$window_size_triangular)) as.numeric(input$window_size_triangular) else NULL,
+                              "trapezoidal" = if (nzchar(input$window_size_trapezoidal)) as.numeric(input$window_size_trapezoidal) else NULL,
+                              NULL
+        )
+        
+        step_width <- switch(input$distribution,
+                             "truncated_gaussian" = if (nzchar(input$step_width_truncated)) as.numeric(input$step_width_truncated) else NULL,
+                             "triangular" = if (nzchar(input$step_width_triangular)) as.numeric(input$step_width_triangular) else NULL,
+                             "trapezoidal" = if (nzchar(input$step_width_trapezoidal)) as.numeric(input$step_width_trapezoidal) else NULL,
+                             NULL
+        )
+
         standard_deviation <- input$standard_deviation
         # a <- input$a
         vertex1 <- input$vertex1
