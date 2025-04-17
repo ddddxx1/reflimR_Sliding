@@ -1,4 +1,4 @@
-#debug-CALIPER-2
+#weight-plot-optimization
 
 #' run
 #' 
@@ -612,6 +612,7 @@ w_sliding.reflim <- function(x,covariate,distribution = "truncated_gaussian", st
             print("window.size & step.width not null")
             window.left <- covcomp[1]
             window.right <- window.left + window.size
+            plot_index <- 1
             for (i in 1:n.steps) {
                 is.in.interval <- covcomp >= window.left & covcomp <= window.right
                 if (sum(is.in.interval) >= n.min) {
@@ -649,13 +650,14 @@ w_sliding.reflim <- function(x,covariate,distribution = "truncated_gaussian", st
                     }
                     
                     if (plot.weight)
-                    plot(interval_cov, www, type = "l", col = "blue", lwd = 2, main = "www VS interval_cov")
+                    plot(interval_cov, www, type = "l", col = "blue", lwd = 2, main = paste("www VS interval_cov", plot_index))
                     points(interval_cov, www, col = "red")
                     www_sum <- sum(www)
                     text(x = mean(interval_cov), y = mean(www), 
                          labels = paste("Sum of www =", round(www_sum, 2)),
                          col = "darkgreen", cex = 1.5, font = 2)
                     sum.www[i] <- www_sum
+                    plot_index <- plot_index + 1
                     
                     
                     
@@ -704,6 +706,7 @@ w_sliding.reflim <- function(x,covariate,distribution = "truncated_gaussian", st
             ind <- 1
             indl <- 1
             indr <- 2
+            plot_index <- 1
             while(indr <= length(cov.unique)) {
                 is.in.interval <- covcomp >= cov.unique[indl] & covcomp < cov.unique[indr]
                 
@@ -739,13 +742,14 @@ w_sliding.reflim <- function(x,covariate,distribution = "truncated_gaussian", st
                     }
                     
                     if (plot.weight)
-                    plot(interval_cov, www, type = "l", col = "blue", lwd = 2, main = "www VS interval_cov")
+                    plot(interval_cov, www, type = "l", col = "blue", lwd = 2, main = paste("www VS interval_cov", plot_index))
                     points(interval_cov, www, col = "red")
                     www_sum <- sum(www)
                     text(x = mean(interval_cov), y = mean(www), 
                          labels = paste("Sum of www =", round(www_sum, 2)),
                          col = "darkgreen", cex = 1.5, font = 2)
                     sum.www[ind] <- www_sum
+                    plot_index <- plot_index + 1
 
                     res.reflim <- w_reflim(
                         xxx,
@@ -789,7 +793,7 @@ w_sliding.reflim <- function(x,covariate,distribution = "truncated_gaussian", st
     
     res <- data.frame(lower.lim,upper.lim,ci.lower.lim.l,ci.lower.lim.u,ci.upper.lim.l,ci.upper.lim.u,distribution.type,covariate.left,covariate.right,covariate.mean,covariate.median,covariate.n,sum.www)
     # Remove rows containing NA
-    res <- res[!is.na(covariate.n) & !is.na(lower.lim),]    # todo 删掉附加条件再次尝试
+    res <- res[!is.na(covariate.n) & !is.na(lower.lim),]
     # res <- res[!is.na(covariate.n),]
     return(res)
 }
@@ -1386,7 +1390,7 @@ w_iboxplot <- function(x, x_weight, lognormal = NULL, perc.trunc = 2.5,
     w_truncate_x <- function(x, x_weight, i) {
         qf <- ifelse(i == 1, qf <- qnorm(q.trunc) / qnorm(0.25),
                     qf <- qnorm(q.trunc) / qnorm(0.25 * (1 - q.trunc / 50)
-                                                + q.trunc))
+                                                + q.trunc)) #todo
         
         if (all(x_weight == 0)) {
             warning("All weights are zero. Use equal weights.")

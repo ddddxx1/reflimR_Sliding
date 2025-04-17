@@ -1,7 +1,7 @@
-#debug-CALIPER-2
+#weight-plot-optimization
 
 
-####################################### WEILCOM TO THE SHINY APP ############################################
+####################################### WEILCOME TO THE SHINY APP ###########################################
 ####################################### from Xufan Dong (2025) ##############################################
 #############################################################################################################
 
@@ -50,6 +50,12 @@ if (require("reflimR")) {
     install.packages("reflimR")
     library(reflimR)
 }
+if (require("shinyjs")) {
+    library(shinyjs)
+} else {
+    install.packages("shinyjs")
+    library(shinyjs)
+}
 
 if (require("shinycssloaders")) {
     library(shinycssloaders)
@@ -70,7 +76,8 @@ t <- reflimR::livertests$Age
 ####################################### User interface ############################################
 
 ui <- fluidPage(
-    titlePanel("Scatter Plot by Segment"),
+    useShinyjs(),
+    titlePanel("reflimR_Sliding"),
 
     sidebarLayout(
         sidebarPanel(
@@ -85,8 +92,8 @@ ui <- fluidPage(
             actionButton('reset', 'Reset Input', icon = icon("trash")),
             selectInput("separator", "Select Separator:", choices = c("Comma(,)" = ",", "Semicolon(;)" = ";"), selected = ";"),
             
-            selectInput("xcol", "Select X Column", choices = NULL),
-            selectInput("tcol", "Select T Column", choices = NULL),
+            selectInput("xcol", "Select x column:", choices = NULL),
+            selectInput("tcol", "Select covariate column:", choices = NULL),
 
             sliderInput("segment",
                         "Choose Segment:",
@@ -99,9 +106,9 @@ ui <- fluidPage(
             # for truncated_gaussian
             conditionalPanel(
                 condition = "input.distribution == 'truncated_gaussian'",
-                numericInput("window_size", "Window Size:", value = NULL),
-                numericInput("step_width", "Step Width:", value = NULL),
-                numericInput("standard_deviation", "Standard deviation:", value = 5),
+                textInput("window_size_truncated", "Window Size:", value = ""),
+                textInput("step_width_truncated", "Step Width:", value = ""),
+                numericInput("standard_deviation_truncated", "Standard deviation:", value = 5),
                 radioButtons(
                     "log_scale",
                     "Log Scale:",
@@ -112,7 +119,7 @@ ui <- fluidPage(
             # for gaussian
             conditionalPanel(
                 condition = "input.distribution == 'gaussian'",
-                numericInput("standard_deviation",
+                numericInput("standard_deviation_gaussian",
                              "Standard deviation:",
                              value = 5),
                 radioButtons("log_scale", "Log Scale:", choices = c("No" = "no", "Yes" = "yes"), selected = "no")
@@ -120,8 +127,8 @@ ui <- fluidPage(
             # for triangular
             conditionalPanel(
                 condition = "input.distribution == 'triangular'",
-                numericInput("window_size", "Window Size:", value = NULL),
-                numericInput("step_width", "Step Width:", value = NULL),
+                textInput("window_size_triangular", "Window Size:", value = ""),
+                textInput("step_width_triangular", "Step Width:", value = ""),
                 # numericInput("a", "Parameter a:", value = 0),
                 numericInput("vertex1", "Vertex:", value = 0.5),
                 # numericInput("c", "Paramater c:", value = 1)
@@ -135,8 +142,8 @@ ui <- fluidPage(
             # for trapezoidal
             conditionalPanel(
                 condition = "input.distribution == 'trapezoidal'",
-                numericInput("window_size", "Window Size:", value = NULL),
-                numericInput("step_width", "Step Width:", value = NULL),
+                textInput("window_size_trapezoidal", "Window Size:", value = ""),
+                textInput("step_width_trapezoidal", "Step Width:", value = ""),
                 # numericInput("a_trap", "Parameter a:", value = 0),
                 numericInput("vertex1_trap", "Top left vertex:", value = 0.3),
                 numericInput("vertex2_trap", "Top right vertex:", value = 0.6),
@@ -161,6 +168,7 @@ ui <- fluidPage(
                          fluidRow(
                              column(12, plotOutput("scatterPlot")),
                              column(12, div(style = "color: red;", textOutput("errorMessage"))),
+                             column(12, plotOutput("weightDistPlot")),
                              column(12, withSpinner(plotOutput("scatterPlot2")))
                          )
                 ),
@@ -170,7 +178,7 @@ ui <- fluidPage(
                                  condition = "input.tabs == 'Comparison'",
                                  column(12, div(style = "color: red;", textOutput("falseDistribution"))),
                                  # column(12, div(style = "color: red;", textOutput("errorMessage"))),
-                                 column(12, numericInput("comparison_sd", "Comparison SD :", value = 6)),
+                                 column(12, numericInput("comparison_sd", "Comparison standard deviation :", value = 6)),
                                  column(12, actionButton("compare", "Compare")),
                                  column(12, div(style = "color: red;", textOutput("paError"))),
                                  column(12, plotOutput("comparisonPlot"))
@@ -190,24 +198,32 @@ server <- function(input, output, session) {
     
     # Reset inputs when switching the distribution
     observeEvent(input$distribution, {
+        updateTextInput(session, "window_size_truncated", value = "")
+        updateTextInput(session, "step_width_truncated", value = "")
+        updateTextInput(session, "window_size_triangular", value = "")
+        updateTextInput(session, "step_width_triangular", value = "")
+        updateTextInput(session, "window_size_trapezoidal", value = "")
+        updateTextInput(session, "step_width_trapezoidal", value = "")
+        updateNumericInput(session, "comparison_sd", value = 6)
+        
         if (input$distribution == "truncated_gaussian") {
-            updateNumericInput(session, "window_size", value = NULL)
-            updateNumericInput(session, "step_width", value = NULL)
-            updateNumericInput(session, "standard_deviation", value = 5)
+            # updateTextInput(session, "window_size", value = "")
+            # updateTextInput(session, "step_width", value = "")
+            updateNumericInput(session, "standard_deviation_truncated", value = 5)
             updateRadioButtons(session, "log_scale", selected = "no")
         } else if (input$distribution == "gaussian") {
-            updateNumericInput(session, "standard_deviation", value = 5)
+            updateNumericInput(session, "standard_deviation_gaussian", value = 5)
             updateRadioButtons(session, "log_scale", selected = "no")
         } else if (input$distribution == "triangular") {
-            updateNumericInput(session, "window_size", value = NULL)
-            updateNumericInput(session, "step_width", value = NULL)
+            # updateTextInput(session, "window_size", value = "")
+            # updateTextInput(session, "step_width", value = "")
             updateNumericInput(session, "vertex1", value = 0.5)
             updateRadioButtons(session, "log_scale", selected = "no")
             showNotification("The vertex is the peak position of the triangular distribution function, with a value range of (0, 1]. 
                              When the input value is 0.5, the triangle is an isosceles triangle.",duration = 10, type = "message")
         } else if (input$distribution == "trapezoidal") {
-            updateNumericInput(session, "window_size", value = NULL)
-            updateNumericInput(session, "step_width", value = NULL)
+            # updateTextInput(session, "window_size", value = "")
+            # updateTextInput(session, "step_width", value = "")
             updateNumericInput(session, "vertex1_trap", value = 0.3)
             updateNumericInput(session, "vertex2_trap", value = 0.6)
             updateRadioButtons(session, "log_scale", selected = "no")
@@ -222,6 +238,7 @@ server <- function(input, output, session) {
     
     observeEvent(input$reset, {
         values$upload_state <- 'reset'
+        shinyjs::reset("datafile")
     })
     
     dataset_input <- reactive({
@@ -280,19 +297,28 @@ server <- function(input, output, session) {
         user_x <- user_data$x
         user_t <- user_data$t
 
-        if (is.na(input$window_size)) {
-            window_size <- NULL
-        } else {
-            window_size <- input$window_size
-        }
-        if (is.na(input$step_width)) {
-            step_width <- NULL
-        } else {
-            step_width <- input$step_width
-        }
         
+        window_size <- switch(input$distribution,
+                              "truncated_gaussian" = if (nzchar(input$window_size_truncated)) as.numeric(input$window_size_truncated) else NULL,
+                              "triangular" = if (nzchar(input$window_size_triangular)) as.numeric(input$window_size_triangular) else NULL,
+                              "trapezoidal" = if (nzchar(input$window_size_trapezoidal)) as.numeric(input$window_size_trapezoidal) else NULL,
+                              NULL
+        )
+        
+        step_width <- switch(input$distribution,
+                             "truncated_gaussian" = if (nzchar(input$step_width_truncated)) as.numeric(input$step_width_truncated) else NULL,
+                             "triangular" = if (nzchar(input$step_width_triangular)) as.numeric(input$step_width_triangular) else NULL,
+                             "trapezoidal" = if (nzchar(input$step_width_trapezoidal)) as.numeric(input$step_width_trapezoidal) else NULL,
+                             NULL
+        )
+        
+        standard_deviation <- switch(input$distribution,
+                                     "truncated_gaussian" = input$standard_deviation_truncated,
+                                     "gaussian" = input$standard_deviation_gaussian,
+                                     NULL
+        )
 
-        standard_deviation <- input$standard_deviation
+        # standard_deviation <- input$standard_deviation
         # a <- input$a
         vertex1 <- input$vertex1
         # c <- input$c
@@ -305,7 +331,7 @@ server <- function(input, output, session) {
         result <- tryCatch({
             print(
                 paste(
-                    "Input values:",
+                    "-------------------Input values:",
                     "window_size:",
                     window_size,
                     "step_width:",
@@ -374,23 +400,33 @@ server <- function(input, output, session) {
         user_x <- user_data$x
         user_t <- user_data$t
 
-        if (is.na(input$standard_deviation)) {
-            standard_deviation <- NULL
-        } else {
-            standard_deviation <- input$standard_deviation
-        }
-        if (is.na(input$window_size)) {
-            window_size <- NULL
-        } else {
-            window_size <- input$window_size
-        }
-        if (is.na(input$step_width)) {
-            step_width <- NULL
-        } else {
-            step_width <- input$step_width
-        }
+        # if (is.na(input$standard_deviation)) {
+        #     standard_deviation <- NULL
+        # } else {
+        #     standard_deviation <- input$standard_deviation
+        # }
         
-        standard_deviation <- input$standard_deviation
+        window_size <- switch(input$distribution,
+                              "truncated_gaussian" = if (nzchar(input$window_size_truncated)) as.numeric(input$window_size_truncated) else NULL,
+                              "triangular" = if (nzchar(input$window_size_triangular)) as.numeric(input$window_size_triangular) else NULL,
+                              "trapezoidal" = if (nzchar(input$window_size_trapezoidal)) as.numeric(input$window_size_trapezoidal) else NULL,
+                              NULL
+        )
+        
+        step_width <- switch(input$distribution,
+                             "truncated_gaussian" = if (nzchar(input$step_width_truncated)) as.numeric(input$step_width_truncated) else NULL,
+                             "triangular" = if (nzchar(input$step_width_triangular)) as.numeric(input$step_width_triangular) else NULL,
+                             "trapezoidal" = if (nzchar(input$step_width_trapezoidal)) as.numeric(input$step_width_trapezoidal) else NULL,
+                             NULL
+        )
+        
+        standard_deviation <- switch(input$distribution,
+                                     "truncated_gaussian" = input$standard_deviation_truncated,
+                                     "gaussian" = input$standard_deviation_gaussian,
+                                     NULL
+        )
+
+        # standard_deviation <- input$standard_deviation
         # a <- input$a
         vertex1 <- input$vertex1
         # c <- input$c
@@ -494,7 +530,7 @@ server <- function(input, output, session) {
         color_palette <- colorRampPalette(c("blue", "red"))(100)
         w_colors <- color_palette[cut(w_values, breaks = 100, labels = FALSE)]
 
-        par(mar = c(3, 3, 3, 8))
+        # par(mar = c(3, 3, 3, 8))
         
         plot(as.numeric(segment_data$t),
              as.numeric(segment_data$x),
@@ -504,21 +540,23 @@ server <- function(input, output, session) {
              pch = 16,
              col = w_colors)
         
-        legend("topright", 
-               inset = c(-0.2, 0), 
-               legend = c("w = 1", "w = 0.8", "w = 0.5"), 
-               col = color_palette[c(100, 80, 50)],  
-               pch = 16,       
-               title = "Weighting",     
+        legend("topright",
+               inset = c(-0.2, 0),
+               legend = c("w = 1", "w = 0.8", "w = 0.5"),
+               col = color_palette[c(100, 80, 50)],
+               pch = 16,
+               title = "Weighting",
                xpd = TRUE,
-               bty = "n")   
+               bty = "n")
         
-        text(x = par("usr")[2] - 0.3 * diff(par("usr")[1:2]),  
-             y = par("usr")[3] + 0.05 * diff(par("usr")[3:4]),
-             labels = paste("Total w:", round(total_w, 2)), 
-             pos = 4, 
-             col = "black",
-             cex = 1.2)
+        # legend("bottomright",
+        #        inset = c(-0.25, 0),
+        #        legend = paste(round(total_w, 2)),
+        #        col = "black",
+        #        pch = NA,
+        #        title = "Total weight sum:",
+        #        xpd = TRUE,
+        #        bty = "n")
     })
     
     
@@ -528,6 +566,55 @@ server <- function(input, output, session) {
     #           <p style='color:green;'>Weighting >= 0.5 and < 0.8</p>
     #           <p style='color:black;'>Weighting < 0.5</p>")
     # })
+    
+    output$weightDistPlot <- renderPlot({
+        par(mar = c(3,3,3,8))
+        data_info <- data()
+        
+        if (!is.null(data_info$error)) {
+            return(NULL)
+        }
+        
+        res <- data_info$res
+        segment_indices <- data_info$segment_indices
+        segment_count <- data_info$segment_count
+        segment_index <- input$segment
+        
+        if (segment_index == 1) {
+            start_row <- 1
+        } else {
+            start_row <- segment_indices[segment_index - 1] + 2
+        }
+        end_row <- segment_indices[segment_index]
+        
+        segment_data <- res[start_row:end_row, ]
+        interval_cov <- as.numeric(segment_data$t)
+        www <- as.numeric(segment_data$w)
+        
+        plot(interval_cov, www, 
+             type = "l", 
+             col = "blue", 
+             lwd = 2, 
+             main = paste("Weight Distribution - Segment", segment_index),
+             xlab = "Interval Covariate",
+             ylab = "Weight")
+        points(interval_cov, www, col = "red")
+        
+        www_sum <- sum(www, na.rm = TRUE)
+        # text(x = mean(interval_cov), 
+        #      y = mean(www), 
+        #      labels = paste("Sum of weights =", round(www_sum, 2)),
+        #      col = "darkgreen", 
+        #      cex = 1.2)
+        legend("bottomright",
+               inset = c(-0.25, 0),
+               legend = paste(round(www_sum, 2)),
+               col = "black",
+               pch = NA,
+               title = "Total weight sum:",
+               xpd = TRUE,
+               bty = "n")
+    })
 
     output$scatterPlot2 <- renderPlot({
         alistplot <- plot_data()
@@ -559,29 +646,50 @@ server <- function(input, output, session) {
             user_data <- reactive_data()
             user_x <- user_data$x
             user_t <- user_data$t
-            
+
             output$comparisonPlot <- renderPlot({
+                window_size <- if (input$distribution == "truncated_gaussian") {
+                    if (nzchar(input$window_size_truncated)) as.numeric(input$window_size_truncated) else NULL
+                } else NULL
+                step_width <- if (input$distribution == "truncated_gaussian") {
+                    if (nzchar(input$step_width_truncated)) as.numeric(input$step_width_truncated) else NULL
+                } else NULL
+                standard_deviation <- switch(input$distribution,
+                                             "truncated_gaussian" = input$standard_deviation_truncated,
+                                             "gaussian" = input$standard_deviation_gaussian,
+                                             NULL)
                 tryCatch({
                     log_scale_bool <- ifelse(input$log_scale == "yes", TRUE, FALSE)
                     print(paste("log_scale_bool:", log_scale_bool))
-                        
-                    res1 <- w_sliding.reflim(user_x, user_t, distribution = input$distribution, standard_deviation = input$standard_deviation, plot.weight = FALSE)  # Error: Disallowed Parameters. Please change!
-                    res2 <- w_sliding.reflim(user_x, user_t, distribution = input$distribution, standard_deviation = input$comparison_sd, plot.weight = FALSE)
+
+                    res1 <- w_sliding.reflim(user_x, user_t, 
+                                             distribution = input$distribution, 
+                                             standard_deviation = standard_deviation, 
+                                             window.size = window_size,
+                                             step.width = step_width,
+                                             plot.weight = FALSE)
+                    res2 <- w_sliding.reflim(user_x, user_t, 
+                                             distribution = input$distribution, 
+                                             standard_deviation = input$comparison_sd, 
+                                             window.size = window_size,
+                                             step.width = step_width,
+                                             plot.weight = FALSE)
                     alist_custom_sd_plot <- gg_alist_custom_sd(res1, res2, log.scale = log_scale_bool)
                     plot(alist_custom_sd_plot)
-                    
+
                     output$paError <- renderText({""})
                 }, error = function(e) {
                     output$paError <- renderText({
                         return("Error: Disallowed Parameters. Please change!")
                     })
                 })
-                
+
             })
         } else {
             showNotification("Comparison only available for Gaussian or Truncated Gaussian distributions", type = "error")
         }
     })
+
 }
 
 # Warning in regularize.values(x, y, ties, missing(ties), na.rm = na.rm) :collapsing to unique 'x' values
