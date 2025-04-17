@@ -648,6 +648,12 @@ server <- function(input, output, session) {
             user_t <- user_data$t
 
             output$comparisonPlot <- renderPlot({
+                window_size <- if (input$distribution == "truncated_gaussian") {
+                    if (nzchar(input$window_size_truncated)) as.numeric(input$window_size_truncated) else NULL
+                } else NULL
+                step_width <- if (input$distribution == "truncated_gaussian") {
+                    if (nzchar(input$step_width_truncated)) as.numeric(input$step_width_truncated) else NULL
+                } else NULL
                 standard_deviation <- switch(input$distribution,
                                              "truncated_gaussian" = input$standard_deviation_truncated,
                                              "gaussian" = input$standard_deviation_gaussian,
@@ -656,8 +662,18 @@ server <- function(input, output, session) {
                     log_scale_bool <- ifelse(input$log_scale == "yes", TRUE, FALSE)
                     print(paste("log_scale_bool:", log_scale_bool))
 
-                    res1 <- w_sliding.reflim(user_x, user_t, distribution = input$distribution, standard_deviation = standard_deviation, plot.weight = FALSE)
-                    res2 <- w_sliding.reflim(user_x, user_t, distribution = input$distribution, standard_deviation = input$comparison_sd, plot.weight = FALSE)
+                    res1 <- w_sliding.reflim(user_x, user_t, 
+                                             distribution = input$distribution, 
+                                             standard_deviation = standard_deviation, 
+                                             window.size = window_size,
+                                             step.width = step_width,
+                                             plot.weight = FALSE)
+                    res2 <- w_sliding.reflim(user_x, user_t, 
+                                             distribution = input$distribution, 
+                                             standard_deviation = input$comparison_sd, 
+                                             window.size = window_size,
+                                             step.width = step_width,
+                                             plot.weight = FALSE)
                     alist_custom_sd_plot <- gg_alist_custom_sd(res1, res2, log.scale = log_scale_bool)
                     plot(alist_custom_sd_plot)
 
