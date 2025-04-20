@@ -1,4 +1,4 @@
-#weight-plot-optimization
+#comparison-optimization
 
 
 ####################################### WEILCOME TO THE SHINY APP ###########################################
@@ -176,9 +176,34 @@ ui <- fluidPage(
                          fluidRow(
                              conditionalPanel(
                                  condition = "input.tabs == 'Comparison'",
-                                 column(12, div(style = "color: red;", textOutput("falseDistribution"))),
+                                 # column(12, div(style = "color: red;", textOutput("falseDistribution"))),
                                  # column(12, div(style = "color: red;", textOutput("errorMessage"))),
-                                 column(12, numericInput("comparison_sd", "Comparison standard deviation :", value = 6)),
+                                 
+                                 # column(12, numericInput("comparison_sd", "Comparison standard deviation :", value = 6)),
+                                 
+                                 conditionalPanel(
+                                     condition = "input.distribution == 'truncated_gaussian'",
+                                     column(12, textInput("comparison_window_size_truncated", "Window Size:", value = "")),
+                                     column(12, textInput("comparison_step_width_truncated", "Step Width:", value = "")),
+                                     column(12, numericInput("comparison_sd", "Comparison standard deviation:", value = 6))
+                                 ),
+                                 conditionalPanel(
+                                     condition = "input.distribution == 'gaussian'",
+                                     column(12, numericInput("comparison_sd", "Comparison standard deviation:", value = 6))
+                                 ),
+                                 conditionalPanel(
+                                     condition = "input.distribution == 'triangular'",
+                                     column(12, textInput("comparison_window_size_triangular", "Window Size:", value = "")),
+                                     column(12, textInput("comparison_step_width_triangular", "Step Width:", value = "")),
+                                     column(12, numericInput("comparison_vertex", "Comparison vertex:", value = 0.5))
+                                 ),
+                                 conditionalPanel(
+                                     condition = "input.distribution == 'trapezoidal'",
+                                     column(12, textInput("comparison_window_size_trapezoidal", "Window Size:", value = "")),
+                                     column(12, textInput("comparison_step_width_trapezoidal", "Step Width:", value = "")),
+                                     column(12, numericInput("comparison_vertex1", "Comparison vertex1:", value = 0.3)),
+                                     column(12, numericInput("comparison_vertex2", "Comparison vertex2:", value = 0.6))
+                                 ),
                                  column(12, actionButton("compare", "Compare")),
                                  column(12, div(style = "color: red;", textOutput("paError"))),
                                  column(12, plotOutput("comparisonPlot"))
@@ -204,7 +229,17 @@ server <- function(input, output, session) {
         updateTextInput(session, "step_width_triangular", value = "")
         updateTextInput(session, "window_size_trapezoidal", value = "")
         updateTextInput(session, "step_width_trapezoidal", value = "")
+        
+        updateTextInput(session, "comparison_window_size_truncated", value = "")
+        updateTextInput(session, "comparison_step_width_truncated", value = "")
+        updateTextInput(session, "comparison_window_size_triangular", value = "")
+        updateTextInput(session, "comparison_step_width_triangular", value = "")
+        updateTextInput(session, "comparison_window_size_trapezoidal", value = "")
+        updateTextInput(session, "comparison_step_width_trapezoidal", value = "")
         updateNumericInput(session, "comparison_sd", value = 6)
+        updateNumericInput(session, "comparison_vertex", value = 0.5)
+        updateNumericInput(session, "comparison_vertex1", value = 0.3)
+        updateNumericInput(session, "comparison_vertex2", value = 0.6)
         
         if (input$distribution == "truncated_gaussian") {
             # updateTextInput(session, "window_size", value = "")
@@ -630,65 +665,143 @@ server <- function(input, output, session) {
         #      pch = 16, col = "blue")
     })
     
+    observeEvent(input$compare, {
+        print("begin to compare")
+        user_data <- reactive_data()
+        user_x <- user_data$x
+        user_t <- user_data$t
+        
+        output$comparisonPlot <- renderPlot({
+            params <- switch(input$distribution,
+                             "truncated_gaussian" = list(
+                                 window.size = if (nzchar(input$comparison_window_size_truncated)) as.numeric(input$comparison_window_size_truncated) else NULL,
+                                 step.width = if (nzchar(input$comparison_step_width_truncated)) as.numeric(input$comparison_step_width_truncated) else NULL,
+                                 standard_deviation = input$comparison_sd
+                             ),
+                             "gaussian" = list(
+                                 standard_deviation = input$comparison_sd
+                             ),
+                             "triangular" = list(
+                                 window.size = if (nzchar(input$comparison_window_size_triangular)) as.numeric(input$comparison_window_size_triangular) else NULL,
+                                 step.width = if (nzchar(input$comparison_step_width_triangular)) as.numeric(input$comparison_step_width_triangular) else NULL,
+                                 vertex1 = input$comparison_vertex
+                             ),
+                             "trapezoidal" = list(
+                                 window.size = if (nzchar(input$comparison_window_size_trapezoidal)) as.numeric(input$comparison_window_size_trapezoidal) else NULL,
+                                 step.width = if (nzchar(input$comparison_step_width_trapezoidal)) as.numeric(input$comparison_step_width_trapezoidal) else NULL,
+                                 vertex1 = input$comparison_vertex1,
+                                 vertex2 = input$comparison_vertex2
+                             )
+            )
+
+            original_params <- switch(input$distribution,
+                                      "truncated_gaussian" = list(
+                                          window.size = if (nzchar(input$window_size_truncated)) as.numeric(input$window_size_truncated) else NULL,
+                                          step.width = if (nzchar(input$step_width_truncated)) as.numeric(input$step_width_truncated) else NULL,
+                                          standard_deviation = input$standard_deviation_truncated
+                                      ),
+                                      "gaussian" = list(
+                                          standard_deviation = input$standard_deviation_gaussian
+                                      ),
+                                      "triangular" = list(
+                                          window.size = if (nzchar(input$window_size_triangular)) as.numeric(input$window_size_triangular) else NULL,
+                                          step.width = if (nzchar(input$step_width_triangular)) as.numeric(input$step_width_triangular) else NULL,
+                                          vertex1 = input$vertex1
+                                      ),
+                                      "trapezoidal" = list(
+                                          window.size = if (nzchar(input$window_size_trapezoidal)) as.numeric(input$window_size_trapezoidal) else NULL,
+                                          step.width = if (nzchar(input$step_width_trapezoidal)) as.numeric(input$step_width_trapezoidal) else NULL,
+                                          vertex1 = input$vertex1_trap,
+                                          vertex2 = input$vertex2_trap
+                                      )
+            )
+            
+            tryCatch({
+                log_scale_bool <- ifelse(input$log_scale == "yes", TRUE, FALSE)
+                print(paste("log_scale_bool:", log_scale_bool))
+
+                res1 <- do.call(w_sliding.reflim, 
+                                c(list(user_x, user_t, 
+                                       distribution = input$distribution,
+                                       plot.weight = FALSE), 
+                                  original_params))
+                
+                res2 <- do.call(w_sliding.reflim, 
+                                c(list(user_x, user_t, 
+                                       distribution = input$distribution,
+                                       plot.weight = FALSE), 
+                                  params))
+                
+                alist_custom_sd_plot <- gg_alist_custom_sd(res1, res2, log.scale = log_scale_bool)
+                plot(alist_custom_sd_plot)
+                
+                output$paError <- renderText({""})
+            }, error = function(e) {
+                output$paError <- renderText({
+                    return("Error: Disallowed Parameters. Please change!")
+                })
+            })
+        })
+    })
     
     # whether supported comparison types
-    output$falseDistribution <- renderText({
-        if (input$distribution != "truncated_gaussian" && input$distribution != "gaussian") {
-            return("This distribution does not support comparison!")
-        }
-        return(NULL)
-    })
-    
-    # Calculation/Drawing/ErrorReporting in Comparison
-    observeEvent(input$compare, {
-        if (input$distribution == "truncated_gaussian" || input$distribution == "gaussian") {
-            print("begin to compare")
-            user_data <- reactive_data()
-            user_x <- user_data$x
-            user_t <- user_data$t
-
-            output$comparisonPlot <- renderPlot({
-                window_size <- if (input$distribution == "truncated_gaussian") {
-                    if (nzchar(input$window_size_truncated)) as.numeric(input$window_size_truncated) else NULL
-                } else NULL
-                step_width <- if (input$distribution == "truncated_gaussian") {
-                    if (nzchar(input$step_width_truncated)) as.numeric(input$step_width_truncated) else NULL
-                } else NULL
-                standard_deviation <- switch(input$distribution,
-                                             "truncated_gaussian" = input$standard_deviation_truncated,
-                                             "gaussian" = input$standard_deviation_gaussian,
-                                             NULL)
-                tryCatch({
-                    log_scale_bool <- ifelse(input$log_scale == "yes", TRUE, FALSE)
-                    print(paste("log_scale_bool:", log_scale_bool))
-
-                    res1 <- w_sliding.reflim(user_x, user_t, 
-                                             distribution = input$distribution, 
-                                             standard_deviation = standard_deviation, 
-                                             window.size = window_size,
-                                             step.width = step_width,
-                                             plot.weight = FALSE)
-                    res2 <- w_sliding.reflim(user_x, user_t, 
-                                             distribution = input$distribution, 
-                                             standard_deviation = input$comparison_sd, 
-                                             window.size = window_size,
-                                             step.width = step_width,
-                                             plot.weight = FALSE)
-                    alist_custom_sd_plot <- gg_alist_custom_sd(res1, res2, log.scale = log_scale_bool)
-                    plot(alist_custom_sd_plot)
-
-                    output$paError <- renderText({""})
-                }, error = function(e) {
-                    output$paError <- renderText({
-                        return("Error: Disallowed Parameters. Please change!")
-                    })
-                })
-
-            })
-        } else {
-            showNotification("Comparison only available for Gaussian or Truncated Gaussian distributions", type = "error")
-        }
-    })
+    # output$falseDistribution <- renderText({
+    #     if (input$distribution != "truncated_gaussian" && input$distribution != "gaussian") {
+    #         return("This distribution does not support comparison!")
+    #     }
+    #     return(NULL)
+    # })
+    # 
+    # # Calculation/Drawing/ErrorReporting in Comparison
+    # observeEvent(input$compare, {
+    #     if (input$distribution == "truncated_gaussian" || input$distribution == "gaussian") {
+    #         print("begin to compare")
+    #         user_data <- reactive_data()
+    #         user_x <- user_data$x
+    #         user_t <- user_data$t
+    # 
+    #         output$comparisonPlot <- renderPlot({
+    #             window_size <- if (input$distribution == "truncated_gaussian") {
+    #                 if (nzchar(input$window_size_truncated)) as.numeric(input$window_size_truncated) else NULL
+    #             } else NULL
+    #             step_width <- if (input$distribution == "truncated_gaussian") {
+    #                 if (nzchar(input$step_width_truncated)) as.numeric(input$step_width_truncated) else NULL
+    #             } else NULL
+    #             standard_deviation <- switch(input$distribution,
+    #                                          "truncated_gaussian" = input$standard_deviation_truncated,
+    #                                          "gaussian" = input$standard_deviation_gaussian,
+    #                                          NULL)
+    #             tryCatch({
+    #                 log_scale_bool <- ifelse(input$log_scale == "yes", TRUE, FALSE)
+    #                 print(paste("log_scale_bool:", log_scale_bool))
+    # 
+    #                 res1 <- w_sliding.reflim(user_x, user_t, 
+    #                                          distribution = input$distribution, 
+    #                                          standard_deviation = standard_deviation, 
+    #                                          window.size = window_size,
+    #                                          step.width = step_width,
+    #                                          plot.weight = FALSE)
+    #                 res2 <- w_sliding.reflim(user_x, user_t, 
+    #                                          distribution = input$distribution, 
+    #                                          standard_deviation = input$comparison_sd, 
+    #                                          window.size = window_size,
+    #                                          step.width = step_width,
+    #                                          plot.weight = FALSE)
+    #                 alist_custom_sd_plot <- gg_alist_custom_sd(res1, res2, log.scale = log_scale_bool)
+    #                 plot(alist_custom_sd_plot)
+    # 
+    #                 output$paError <- renderText({""})
+    #             }, error = function(e) {
+    #                 output$paError <- renderText({
+    #                     return("Error: Disallowed Parameters. Please change!")
+    #                 })
+    #             })
+    # 
+    #         })
+    #     } else {
+    #         showNotification("Comparison only available for Gaussian or Truncated Gaussian distributions", type = "error")
+    #     }
+    # })
 
 }
 
