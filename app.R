@@ -1,4 +1,4 @@
-#comparison-optimization
+#main
 
 
 ####################################### WEILCOME TO THE SHINY APP ###########################################
@@ -82,7 +82,7 @@ ui <- fluidPage(
     sidebarLayout(
         sidebarPanel(
             selectInput("distribution",
-                        "Choose Distribution:",
+                        "Choose weight function:",
                         choices = c("Truncated gaussian" = "truncated_gaussian",
                                     "Gaussian" = "gaussian",
                                     "Triangular" = "triangular",
