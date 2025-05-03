@@ -1,4 +1,4 @@
-#main
+#MLE
 
 
 ####################################### WEILCOME TO THE SHINY APP ###########################################
@@ -26,18 +26,18 @@ if (require("ggplot2")) {
     install.packages("ggplot2")
     library(ggplot2)
 }
-if (require("plotly")) {
-    library(plotly)
-} else {
-    install.packages("plotly")
-    library(plotly)
-}
-if (require("dplyr")) {
-    library(dplyr)
-} else {
-    install.packages("dplyr")
-    library(dplyr)
-}
+# if (require("plotly")) {
+#     library(plotly)
+# } else {
+#     install.packages("plotly")
+#     library(plotly)
+# }
+# if (require("dplyr")) {
+#     library(dplyr)
+# } else {
+#     install.packages("dplyr")
+#     library(dplyr)
+# }
 if (require("Hmisc")) {
     library(Hmisc)
 } else {
@@ -452,7 +452,18 @@ server <- function(input, output, session) {
 
             # Compute segment index
             segment_indices <- which(res$x == "---") - 1
-            segment_count <- length(segment_indices)
+            
+            if (length(segment_indices) == 0) {
+                segment_indices <- nrow(res)
+                segment_count <- 1
+            } else {
+                if (tail(segment_indices, 1) < nrow(res)) {
+                    segment_indices <- c(segment_indices, nrow(res))
+                }
+                segment_count <- length(segment_indices)
+            }
+            
+            # segment_count <- length(segment_indices)
 
             # Update the maximum value of the slider
             updateSliderInput(session, "segment", max = segment_count)
@@ -575,13 +586,15 @@ server <- function(input, output, session) {
     output$scatterPlot <- renderPlot({  # first plot
         par(mar = c(3,3,3,8))
         data_info <- data()
+        # options(max.print = 2000)
+        # print(data_info$res)
         
         if (!is.null(data_info$error)) {
             return(NULL)
         }
         
         res <- data_info$res
-        # print(data_info)
+
         segment_indices <- data_info$segment_indices
         segment_count <- data_info$segment_count
         
@@ -595,7 +608,15 @@ server <- function(input, output, session) {
         end_row <- segment_indices[segment_index]
         
         segment_data <- res[start_row:end_row, ]
-        print(paste("window_size:", end_row - start_row, "from:", start_row, "to:", end_row))
+        
+        calculated_window_size <- max(as.numeric(segment_data$t)) - min(as.numeric(segment_data$t))
+        calculated_step_width <- if (segment_count > 1 && segment_index > 1) {
+            current_start_time <- min(as.numeric(segment_data$t))
+            prev_start_time <- min(as.numeric(res[if (segment_index == 2) 1 else segment_indices[segment_index - 2] + 2, "t"]))
+            current_start_time - prev_start_time
+        } else 0
+
+        print(paste("window_size (point):", end_row - start_row + 1, "from:", start_row, "to:", end_row, ", window size (long):", as.numeric(res[end_row, "t"]) - as.numeric(res[start_row, "t"])))
         w_values <- as.numeric(segment_data$w)
         
         total_w <- sum(w_values, na.rm = TRUE)
@@ -623,14 +644,14 @@ server <- function(input, output, session) {
                xpd = TRUE,
                bty = "n")
         
-        # legend("bottomright",
-        #        inset = c(-0.25, 0),
-        #        legend = paste(round(total_w, 2)),
-        #        col = "black",
-        #        pch = NA,
-        #        title = "Total weight sum:",
-        #        xpd = TRUE,
-        #        bty = "n")
+        legend("bottomright",
+               inset = c(-0.25, 0),
+               legend = paste("Window size:", calculated_window_size, "\nStep width:", calculated_step_width),
+               col = "black",
+               pch = NA,
+               title = "",
+               xpd = TRUE,
+               bty = "n")
     })
     
     
@@ -649,9 +670,10 @@ server <- function(input, output, session) {
             return(NULL)
         }
         
-        res <- data_info$res
-        segment_indices <- data_info$segment_indices
-        segment_count <- data_info$segment_count
+        res <- data_info$res    # x t w
+        segment_indices <- data_info$segment_indices    # the end of each segment
+        segment_count <- data_info$segment_count    # the number of segments
+        
         segment_index <- input$segment
         
         if (segment_index == 1) {
@@ -659,7 +681,7 @@ server <- function(input, output, session) {
         } else {
             start_row <- segment_indices[segment_index - 1] + 2
         }
-        end_row <- segment_indices[segment_index]
+        end_row <- segment_indices[segment_index]   # error: (200 10) end_row is NA
         
         segment_data <- res[start_row:end_row, ]
         interval_cov <- as.numeric(segment_data$t)
