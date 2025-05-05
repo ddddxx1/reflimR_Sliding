@@ -1,4 +1,6 @@
-#main
+#MLE
+
+source("stats-3200273-supplementary.R")
 
 #' run
 #' 
@@ -679,9 +681,11 @@ w_sliding.reflim <- function(x,covariate,distribution = "truncated_gaussian", st
             for (i in 1:n.steps) {
                 is.in.interval <- covcomp >= window.left & covcomp <= window.right
                 if (sum(is.in.interval) >= n.min) { # enough points in the interval
-                    print("enough points in the intercal")
+                    # print("enough points in the intercal")
+                    # print(paste("window.left =", window.left, "window.right =", window.right))
                     
                     interval_cov <- covcomp[is.in.interval]
+                    # print(interval_cov)
                     
                     xxx <- xx[is.in.interval]
                     
@@ -715,7 +719,7 @@ w_sliding.reflim <- function(x,covariate,distribution = "truncated_gaussian", st
                     
                     www_sum <- sum(www)
                     sum.www[i] <- www_sum
-                    print(www_sum)
+                    # print(www_sum)
                     
                     if (www_sum < weight_threshold) {
                         warning("Weight sum is too low. Skipping this step.")
@@ -1360,7 +1364,7 @@ w_reflim <- function (x, x_weight, lognormal = NULL, targets = NULL, perc.trunc 
 #' w_bowley
 #' 
 #' @description 
-#' Beurteilung der Symmetrie
+#' Assessment of symmetry
 #' 
 #' @importFrom Hmisc wtd.quantile
 #' 
@@ -1372,7 +1376,7 @@ w_bowley <- function(x, x_weight) {
         return(0)
     }
     return((w_quantiles[3] + w_quantiles[1] - 2 * w_quantiles[2]) / (w_quantiles[3] -
-                                                                         w_quantiles[2])) # fixed: quan[3] = quan[2] TRUE/FALSE needed
+                                                                         w_quantiles[2]))
 }
 
 
