@@ -1,6 +1,6 @@
 #MLE
 
-
+source("stats-3200273-supplementary.R")
 
 #' run
 #' 
@@ -1364,7 +1364,7 @@ w_reflim <- function (x, x_weight, lognormal = NULL, targets = NULL, perc.trunc 
 #' w_bowley
 #' 
 #' @description 
-#' Beurteilung der Symmetrie
+#' Assessment of symmetry
 #' 
 #' @importFrom Hmisc wtd.quantile
 #' 
@@ -1376,7 +1376,7 @@ w_bowley <- function(x, x_weight) {
         return(0)
     }
     return((w_quantiles[3] + w_quantiles[1] - 2 * w_quantiles[2]) / (w_quantiles[3] -
-                                                                         w_quantiles[2])) # fixed: quan[3] = quan[2] TRUE/FALSE needed
+                                                                         w_quantiles[2]))
 }
 
 
