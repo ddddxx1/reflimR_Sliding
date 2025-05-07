@@ -259,6 +259,7 @@ reflimLOD.MLE <- function(measured.values,lod,n.lod,lambda=0,right.quantile=0.75
     pnorm.lod <- ptruncnorm(transformed.lod,b=normal.result$upper.truncation,mean=pars[1],sd=pars[2])
 	
     return(-n.lod*log(pnorm.lod) - length(normal.result$selected.values)*log(1-pnorm.lod) - sum(log(dtruncnorm(normal.result$selected.values,a=transformed.lod,b=normal.result$upper.truncation,mean=pars[1],sd=pars[2]))))
+    # <LOD      >LOD        each actual observation
   }
   
   sigma <- (normal.result$upper.truncation - transformed.lod)/(qnorm(0.975)-qnorm(0.975*n.lod/(length(normal.result$selected.values)+n.lod)))
@@ -633,44 +634,44 @@ lod.artificial.sample <- function(n,prop.lod.healthy=0,prop.path=0,mu.path=3){
 #########################################################################################
 
 
-### Generate a synthetic data set
-sim.ex <- lod.artificial.sample(1000,prop.lod.healthy=0.25,prop.path=0.2,mu.path=5)
-### Transform to a log-normal distribution
-sim.ex$measured.values <- exp(sim.ex$measured.values)
-sim.ex$lod <- exp(sim.ex$lod)
-
-
-### Example for reflimLOD.MLE
-result.MLE <- reflimLOD.MLE(sim.ex$measured.values,sim.ex$lod,sim.ex$n.lod,lambda=0)
-print(result.MLE$lower.limit)
-print(result.MLE$upper.limit)
-
-### Example for reflimLOD.Quant
-result.quant <- reflimLOD.Quant(sim.ex$measured.values,sim.ex$lod,sim.ex$n.lod,lambda=0)
-print(result.quant$lower.limit)
-print(result.quant$upper.limit)
-
-
-
-
-### Plot a histogram of the values after truncation including the fitted density.
-lod.hist(result.MLE,xlab="TNT male",col.grid=1)
-
-### QQ-plot (for the transformed trunated values. Here no transformatiion is required.)
-lod.qqplot(result.MLE,col.grid=1)
-
-### Compute 95% confidence intervals for the reference limits.
-cis <- ci.reflimLOD.MLE(sim.ex$measured.values,sim.ex$lod,sim.ex$n.lod,lambda=0)  
-print(cis$lower.limit.ci)
-print(cis$upper.limit.ci)
-
-
-
-### Plot R-squared values for different lambdas
-plot.r.squared(sim.ex$measured.values,sim.ex$lod,sim.ex$n.lod,col.grid=1)
-
-### Plot the reference intervals for different lambdas
-plot.reflims(sim.ex$measured.values,sim.ex$lod,sim.ex$n.lod,col.grid=1)
+# ### Generate a synthetic data set
+# sim.ex <- lod.artificial.sample(1000,prop.lod.healthy=0.25,prop.path=0.2,mu.path=5)
+# ### Transform to a log-normal distribution
+# sim.ex$measured.values <- exp(sim.ex$measured.values)
+# sim.ex$lod <- exp(sim.ex$lod)
+# 
+# 
+# ### Example for reflimLOD.MLE
+# result.MLE <- reflimLOD.MLE(sim.ex$measured.values,sim.ex$lod,sim.ex$n.lod,lambda=0)
+# print(result.MLE$lower.limit)
+# print(result.MLE$upper.limit)
+# 
+# ### Example for reflimLOD.Quant
+# result.quant <- reflimLOD.Quant(sim.ex$measured.values,sim.ex$lod,sim.ex$n.lod,lambda=0)
+# print(result.quant$lower.limit)
+# print(result.quant$upper.limit)
+# 
+# 
+# 
+# 
+# ### Plot a histogram of the values after truncation including the fitted density.
+# lod.hist(result.MLE,xlab="TNT male",col.grid=1)
+# 
+# ### QQ-plot (for the transformed trunated values. Here no transformatiion is required.)
+# lod.qqplot(result.MLE,col.grid=1)
+# 
+# ### Compute 95% confidence intervals for the reference limits.
+# cis <- ci.reflimLOD.MLE(sim.ex$measured.values,sim.ex$lod,sim.ex$n.lod,lambda=0)  
+# print(cis$lower.limit.ci)
+# print(cis$upper.limit.ci)
+# 
+# 
+# 
+# ### Plot R-squared values for different lambdas
+# plot.r.squared(sim.ex$measured.values,sim.ex$lod,sim.ex$n.lod,col.grid=1)
+# 
+# ### Plot the reference intervals for different lambdas
+# plot.reflims(sim.ex$measured.values,sim.ex$lod,sim.ex$n.lod,col.grid=1)
 
 
 

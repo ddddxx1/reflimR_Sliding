@@ -2,6 +2,25 @@
 
 source("stats-3200273-supplementary.R")
 
+MLE <- function(x, covariate) {
+    is.nona <- !is.na(covariate)
+    xx <- x[is.nona]
+    covcomp <- covariate[is.nona]
+    
+    ord.cov <- order(covcomp)
+    xx <- xx[ord.cov]
+    covcomp <- covcomp[ord.cov]
+    
+    lod = min(xx, na.rm = TRUE)
+    n.lod  <- sum(!is.na(covcomp) & is.na(xx))
+    print(paste("lod =", lod, "n.lod =", n.lod))
+    
+    xxx <- xx[!is.na(xx)]
+    
+    print(reflimLOD.MLE(xxx, lod, n.lod))
+    
+}
+
 #' run
 #' 
 #' @description 
@@ -423,6 +442,59 @@ gg_alist_custom_sd <- function(result.sliding.reflim1, result.sliding.reflim2, l
 
 
 
+w_reflimLOD.MLE <- function(measured.values, lod, n.lod, weights = NULL, lambda = 0, right.quantile = 0.75) {
+    if (is.null(weights)) {
+        weights <- rep(1, length(measured.values))
+        print("weights are not provided, using equal weights")
+    }
+    
+    transformed.measured.values <- box.cox.trans(measured.values, lambda = lambda)
+    transformed.lod <- box.cox.trans(lod, lambda = lambda)
+    
+    normal.result <- modTrunc(transformed.measured.values, transformed.lod, n.lod, right.quantile = right.quantile)
+    
+    if (is.na(normal.result$upper.truncation)){
+        return(list(lower.limit=NA, upper.limit=NA, mu.log=NA, sigma.log=NA, 
+                    upper.truncation=NA, selected.values=NA, lod=lod, n.lod=n.lod))
+    }
+    
+    obj.fun <- function(pars){
+        pnorm.lod <- ptruncnorm(transformed.lod, b=normal.result$upper.truncation, 
+                                mean=pars[1], sd=pars[2])
+        
+        return(-n.lod * log(pnorm.lod) * mean(weights) - 
+                   sum(weights * log(1-pnorm.lod)) / length(weights) - 
+                   sum(weights * log(dtruncnorm(normal.result$selected.values,
+                                                a=transformed.lod,
+                                                b=normal.result$upper.truncation,
+                                                mean=pars[1],
+                                                sd=pars[2]))))
+    }
+    
+    sigma <- (normal.result$upper.truncation - transformed.lod)/(qnorm(0.975)-qnorm(0.975*n.lod/(length(normal.result$selected.values)+n.lod)))
+    mu <- normal.result$upper.truncation - sigma*qnorm(0.975)
+    
+    pars.initial <- c(mu,sigma)
+    optim.result <- optim(pars.initial,obj.fun)
+    
+    lims <- box.cox.inv.trans(qnorm(c(0.025,0.975),mean=optim.result$par[1],sd=optim.result$par[2]),lambda=lambda)
+    if (is.nan(lims[1])){
+        lims[1] <- 0
+    }
+    lims1perc <- box.cox.inv.trans(qnorm(c(0.01,0.99),mean=optim.result$par[1],sd=optim.result$par[2]),lambda=lambda)
+    if (is.nan(lims1perc[1])){
+        lims1perc[1] <- 0
+    }
+    return(list(lower.limit=lims[1],upper.limit=lims[2],percentile1=lims1perc[1],percentile99=lims1perc[2],mu.log=unname(optim.result$par[1]),
+                sigma.log=unname(optim.result$par[2]),upper.truncation=unname(box.cox.inv.trans(normal.result$upper.truncation,lambda=lambda)),
+                selected.values=box.cox.inv.trans(normal.result$selected.values,lambda=lambda),minus.log.likelihood=optim.result$value,lod=lod,
+                n.lod=n.lod,lambda=lambda))
+}
+
+
+
+
+
 
 #' dtriang
 #' 
@@ -439,8 +511,8 @@ gg_alist_custom_sd <- function(result.sliding.reflim1, result.sliding.reflim2, l
 
 dtriang <- function(x, a, b, c) {
     y <- ifelse(x < a | x > c, 0,
-                ifelse(x <= b, 2 * (x - a) / ((b - a) * (c - a)),
-                       2 * (c - x) / ((c - b) * (c - a))))
+                ifelse(x <= b, (x - a) / ((b - a) * (c - a)),
+                       (c - x) / ((c - b) * (c - a))))
     return(y)
 }
 

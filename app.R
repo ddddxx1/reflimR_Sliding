@@ -616,7 +616,8 @@ server <- function(input, output, session) {
             current_start_time - prev_start_time
         } else 0
 
-        print(paste("window_size (point):", end_row - start_row + 1, "from:", start_row, "to:", end_row, ", window size (long):", as.numeric(res[end_row, "t"]) - as.numeric(res[start_row, "t"])))
+        print(paste("window_size (point):", end_row - start_row + 1, "from:", start_row, "to:", end_row, ", window size (long):", as.numeric(res[end_row, "t"]) - as.numeric(res[start_row, "t"]), 
+                          "from:", as.numeric(res[start_row, "t"]), "to", as.numeric(res[end_row, "t"])))
         w_values <- as.numeric(segment_data$w)
         
         total_w <- sum(w_values, na.rm = TRUE)
