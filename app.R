@@ -161,7 +161,22 @@ ui <- fluidPage(
             tabsetPanel(id = "tabs",
                 tabPanel("Dataset",
                          fluidRow(
-                             column(12, plotOutput("uploadedScatterPlot"))
+                             column(12,  
+                                    h3("Reference Interval Estimation with Sliding Windows"),
+                                    p("This Shiny application implements reference interval estimation using sliding windows with various weighting functions. 
+                                     It supports multiple distribution types including truncated Gaussian, Gaussian, triangular, and trapezoidal distributions."),
+                                    p("Key features:"),
+                                    tags$ul(
+                                        tags$li("Flexible data input through CSV file upload"),
+                                        tags$li("Multiple weighting function options"),
+                                        tags$li("Visualization of reference intervals"),
+                                        tags$li("Parameter comparison capabilities"),
+                                        tags$li("Customizable window sizes and step widths")
+                                    ),
+                                    p("The application helps prevent abrupt jumps between age groups by implementing smooth transitions 
+                                     through weighted calculations, ensuring more reliable and clinically meaningful reference intervals."),
+                                    hr(),
+                                    plotOutput("uploadedScatterPlot"))
                         )
                 ),
                 tabPanel("Limit",
@@ -571,15 +586,16 @@ server <- function(input, output, session) {
     
     output$uploadedScatterPlot <- renderPlot({
         user_data <- reactive_data()
-        if (is.null(user_data)) {
+        
+        if (is.null(user_data) || all(is.na(user_data$t)) || all(is.na(user_data$x))) {
             return(NULL)
         }
-        
+
         plot(user_data$t, user_data$x,
-             xlab = input$tcol, 
-             ylab = input$xcol, 
+             xlab = input$tcol,
+             ylab = input$xcol,
              main = "Scatter Plot of Uploaded Data",
-             pch = 16, 
+             pch = 16,
              col = "darkblue")
     })
 
