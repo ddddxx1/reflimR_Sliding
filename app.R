@@ -82,13 +82,13 @@ ui <- fluidPage(
     sidebarLayout(
         sidebarPanel(
             selectInput("distribution",
-                        "Choose weight function:",
+                        label = div(icon("wave-square"), "Choose weight function:"),
                         choices = c("Truncated gaussian" = "truncated_gaussian",
                                     "Gaussian" = "gaussian",
                                     "Triangular" = "triangular",
                                     "Trapezoidal" = "trapezoidal"),
                         selected = "truncated_gaussian"),
-            fileInput("datafile", "Upload CSV File", accept = c("text/csv", "text/comma-separated-values,text/plain", ".csv")),
+            fileInput("datafile",div(icon("file-csv"), "Upload CSV File"), accept = c("text/csv", "text/comma-separated-values,text/plain", ".csv")),
             actionButton('reset', 'Reset Input', icon = icon("trash")),
             selectInput("separator", "Select Separator:", choices = c("Comma(,)" = ",", "Semicolon(;)" = ";"), selected = ";"),
             
@@ -159,7 +159,7 @@ ui <- fluidPage(
 
         mainPanel(
             tabsetPanel(id = "tabs",
-                tabPanel("Dataset",
+                tabPanel("Dataset", icon = icon("database"),
                          fluidRow(
                              column(12,  
                                     h3("Reference Interval Estimation with Sliding Windows"),
@@ -179,7 +179,7 @@ ui <- fluidPage(
                                     plotOutput("uploadedScatterPlot"))
                         )
                 ),
-                tabPanel("Limit",
+                tabPanel("Limit", icon = icon("chart-line"),
                          fluidRow(
                              column(12, plotOutput("scatterPlot")),
                              column(12, div(style = "color: red;", textOutput("errorMessage"))),
@@ -187,7 +187,7 @@ ui <- fluidPage(
                              column(12, withSpinner(plotOutput("scatterPlot2")))
                          )
                 ),
-                tabPanel("Comparison",
+                tabPanel("Comparison", icon = icon("balance-scale"),
                          fluidRow(
                              conditionalPanel(
                                  condition = "input.tabs == 'Comparison'",
@@ -225,7 +225,7 @@ ui <- fluidPage(
                              )
                          )
                 ),
-                tabPanel("Settings",
+                tabPanel("Settings", icon = icon("cog"),
                          fluidRow(
                              column(12, textInput("weight_threshold", "Weight threshold:", value = NULL)),
                              column(12, actionButton("reset", "Reset Input"))
