@@ -228,8 +228,15 @@ ui <- fluidPage(
                 tabPanel("Settings", icon = icon("cog"),
                          fluidRow(
                              column(12, textInput("weight_threshold", "Weight threshold:", value = NULL)),
-                             column(12, actionButton("reset", "Reset Input"))
-                         ))
+                             column(12, actionButton("reset", "Reset Input")),
+                             column(12, br()),
+                             column(12, br()),
+                             column(12, radioButtons("showMoreInfo", 
+                                                     "Show more information in console:", 
+                                                     choices = c("No" = "no", "Yes" = "yes"),
+                                                     selected = "no", inline = TRUE))
+                        )
+                )
             )
         )
     )
@@ -241,6 +248,7 @@ ui <- fluidPage(
 server <- function(input, output, session) {
     values <- reactiveValues(upload_state = NULL)
     weight_threshold_value <- reactiveVal(NULL)
+    show_more_info <- reactiveVal(FALSE)
     
     observeEvent(input$weight_threshold, {
         if (nzchar(input$weight_threshold)) {
@@ -264,6 +272,15 @@ server <- function(input, output, session) {
         weight_threshold_value(NULL)
         updateTextInput(session, "weight_threshold", value = "")
         showNotification("Weight threshold value has been reset.", type = "message")
+    })
+    
+    observeEvent(input$showMoreInfo, {
+        show_more_info(input$showMoreInfo == "yes")
+        if (input$showMoreInfo == "yes") {
+            showNotification("More information will be shown in the console.", type = "message")
+        } else {
+            showNotification("Less information will be shown in the console.", type = "message")
+        }
     })
     
     # Reset inputs when switching the distribution
@@ -412,13 +429,14 @@ server <- function(input, output, session) {
         result <- tryCatch({
             print(
                 paste(
-                    "-------------------Input values:",
+                    "------------Input values:",
                     "window_size:",
                     window_size,
                     "step_width:",
                     step_width,
                     "standard_deviation:",
-                    standard_deviation
+                    standard_deviation,
+                    "------------"
                 )
             )
             if (input$distribution == "truncated_gaussian") {
@@ -429,7 +447,8 @@ server <- function(input, output, session) {
                     standard_deviation = standard_deviation,
                     window.size = window_size,
                     step.width = step_width,
-                    weight_threshold = weight_threshold_value()
+                    weight_threshold = weight_threshold_value(),
+                    verbose = show_more_info()
                 )
             } else if (input$distribution == "gaussian") {
                 res <- w_sliding.reflim.plot(
@@ -439,7 +458,8 @@ server <- function(input, output, session) {
                     standard_deviation = standard_deviation,
                     window.size = NULL,
                     step.width = NULL,
-                    weight_threshold = weight_threshold_value()
+                    weight_threshold = weight_threshold_value(),
+                    verbose = show_more_info()
                 )
             } else if (input$distribution == "triangular") {
                 res <- w_sliding.reflim.plot(
@@ -449,7 +469,8 @@ server <- function(input, output, session) {
                     vertex1 = vertex1,
                     window.size = window_size,
                     step.width = step_width,
-                    weight_threshold = weight_threshold_value()
+                    weight_threshold = weight_threshold_value(),
+                    verbose = show_more_info()
                 )
             } else if (input$distribution == "trapezoidal") {
                 res <- w_sliding.reflim.plot(
@@ -460,7 +481,8 @@ server <- function(input, output, session) {
                     vertex2 = vertex2_trap,
                     window.size = window_size,
                     step.width = step_width,
-                    weight_threshold = weight_threshold_value()
+                    weight_threshold = weight_threshold_value(),
+                    verbose = show_more_info()
                 )
             }
             
@@ -534,29 +556,33 @@ server <- function(input, output, session) {
         result <- tryCatch({
             log_scale_bool <- ifelse(input$log_scale == "yes", TRUE, FALSE)
             if (input$distribution == "truncated_gaussian") {
-                run(user_x, user_t, distribution = input$distribution, log.scale = log_scale_bool,
+                reflimR_Sliding(user_x, user_t, distribution = input$distribution, log.scale = log_scale_bool,
                     standard_deviation = standard_deviation,
                     window.size = window_size,
                     step.width = step_width,
-                    weight_threshold = weight_threshold_value())
+                    weight_threshold = weight_threshold_value(), 
+                    verbose = show_more_info())
             } else if (input$distribution == "gaussian") {
-                run(user_x, user_t, distribution = input$distribution, log.scale = log_scale_bool,
+                reflimR_Sliding(user_x, user_t, distribution = input$distribution, log.scale = log_scale_bool,
                     standard_deviation = standard_deviation,
                     window.size = NULL,
                     step.width = NULL,
-                    weight_threshold = weight_threshold_value())
+                    weight_threshold = weight_threshold_value(), 
+                    verbose = show_more_info())
             } else if (input$distribution == "triangular") {
-                run(user_x, user_t, distribution = input$distribution, log.scale = log_scale_bool,
+                reflimR_Sliding(user_x, user_t, distribution = input$distribution, log.scale = log_scale_bool,
                     vertex1 = vertex1,
                     window.size = window_size,
                     step.width = step_width,
-                    weight_threshold = weight_threshold_value())
+                    weight_threshold = weight_threshold_value(),
+                    verbose = show_more_info())
             } else if (input$distribution == "trapezoidal") {
                 run(user_x, user_t, distribution = input$distribution, log.scale = log_scale_bool,
                      vertex1 = vertex1_trap, vertex2 = vertex2_trap,
                     window.size = window_size,
                     step.width = step_width,
-                    weight_threshold = weight_threshold_value())
+                    weight_threshold = weight_threshold_value(),
+                    verbose = show_more_info())
             }
         }, error = function(e) {
             message("Error: ", e$message)
@@ -632,7 +658,8 @@ server <- function(input, output, session) {
             current_start_time - prev_start_time
         } else 0
 
-        print(paste("window_size (point):", end_row - start_row + 1, "from:", start_row, "to:", end_row, ", window size (long):", as.numeric(res[end_row, "t"]) - as.numeric(res[start_row, "t"]), 
+        if (show_more_info())
+        print(paste("window.size (point):", end_row - start_row + 1, "from:", start_row, "to:", end_row, ", window.size (long):", as.numeric(res[end_row, "t"]) - as.numeric(res[start_row, "t"]), 
                           "from:", as.numeric(res[start_row, "t"]), "to", as.numeric(res[end_row, "t"])))
         w_values <- as.numeric(segment_data$w)
         
@@ -653,7 +680,7 @@ server <- function(input, output, session) {
              col = w_colors)
         
         legend("topright",
-               inset = c(-0.2, 0),
+               inset = c(-0.15, 0),
                legend = c("w = 1", "w = 0.8", "w = 0.5"),
                col = color_palette[c(100, 80, 50)],
                pch = 16,
@@ -744,7 +771,8 @@ server <- function(input, output, session) {
     })
     
     observeEvent(input$compare, {
-        print("begin to compare")
+        if (show_more_info() == TRUE)
+        print("Use comparison feature.")
         user_data <- reactive_data()
         user_x <- user_data$x
         user_t <- user_data$t
@@ -796,20 +824,23 @@ server <- function(input, output, session) {
             
             tryCatch({
                 log_scale_bool <- ifelse(input$log_scale == "yes", TRUE, FALSE)
+                if (show_more_info())
                 print(paste("log_scale_bool:", log_scale_bool))
 
                 res1 <- do.call(w_sliding.reflim, 
                                 c(list(user_x, user_t, 
                                        distribution = input$distribution,
                                        plot.weight = FALSE,
-                                       weight_threshold = weight_threshold_value()), 
+                                       weight_threshold = weight_threshold_value(),
+                                       verbose = show_more_info()), 
                                   original_params))
                 
                 res2 <- do.call(w_sliding.reflim, 
                                 c(list(user_x, user_t, 
                                        distribution = input$distribution,
                                        plot.weight = FALSE,
-                                       weight_threshold = weight_threshold_value()), 
+                                       weight_threshold = weight_threshold_value(),
+                                       verbose = show_more_info()), 
                                   params))
                 
                 alist_custom_sd_plot <- gg_alist_custom_sd(res1, res2, log.scale = log_scale_bool)
