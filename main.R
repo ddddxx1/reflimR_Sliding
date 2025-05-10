@@ -39,7 +39,7 @@ MLE <- function(x, covariate) {
 #' @export
 
 reflimR_Sliding <- function(x, t, distribution = "truncated_gaussian", log.scale = FALSE, standard_deviation = 5, 
-                standard_deviation_compare = NULL, vertex1 = NULL, vertex2 = NULL, vertex1.2 = NULL, vertex2.2 = NULL, window.size=NULL,step.width=NULL, window.size_com = NULL, step.width_com = NULL,
+                standard_deviation_compare = NULL, vertex1 = NULL, vertex2 = NULL, vertex1_com = NULL, vertex2_com = NULL, window.size=NULL,step.width=NULL, window.size_com = NULL, step.width_com = NULL,
                 lognormal=NULL,perc.trunc=2.5,n.min.window=200,n.min=100,apply.rounding=FALSE, weight_threshold = NULL, verbose = TRUE) {
     # if (distribution == "truncated_gaussian") {
     #     if (standard_deviation == 5) {
@@ -67,13 +67,13 @@ reflimR_Sliding <- function(x, t, distribution = "truncated_gaussian", log.scale
     # x <- as.numeric(x)
     # t <- as.integer(t)
     par(mar = c(3, 3, 3, 3))
-    if (is.null(standard_deviation_compare) && is.null(vertex1.2) && is.null(vertex2.2) && is.null(window.size_com) && is.null(step.width_com)) {  # no comparison
+    if (is.null(standard_deviation_compare) && is.null(vertex1_com) && is.null(vertex2_com) && is.null(window.size_com) && is.null(step.width_com)) {  # no comparison
         # print("no comparison")
         res <- w_sliding.reflim(x, t, distribution = distribution, standard_deviation = standard_deviation, vertex1 = vertex1, vertex2 = vertex2, window.size = window.size, step.width = step.width, lognormal = lognormal, weight_threshold = weight_threshold, verbose = verbose)
         gg_alist(result.sliding.reflim = res, log.scale = log.scale)
     } else {
         res1 <- w_sliding.reflim(x, t, distribution = distribution, standard_deviation = standard_deviation, vertex1 = vertex1, vertex2 = vertex2, window.size = window.size, step.width = step.width, lognormal = lognormal, weight_threshold = weight_threshold, verbose = verbose)
-        res2 <- w_sliding.reflim(x, t, distribution = distribution, standard_deviation = standard_deviation_compare, vertex1 = vertex1.2, vertex2 = vertex2.2, window.size = window.size_com, step.width = step.width_com, lognormal = lognormal, weight_threshold = weight_threshold, verbose = verbose)
+        res2 <- w_sliding.reflim(x, t, distribution = distribution, standard_deviation = standard_deviation_compare, vertex1 = vertex1_com, vertex2 = vertex2_com, window.size = window.size_com, step.width = step.width_com, lognormal = lognormal, weight_threshold = weight_threshold, verbose = verbose)
         gg_alist_custom_sd(result.sliding.reflim1 = res1, result.sliding.reflim2 = res2, log.scale = log.scale)
     }
     
