@@ -1,6 +1,6 @@
 #MLE
 
-source("stats-3200273-supplementary.R")
+# source("stats-3200273-supplementary.R")
 
 MLE <- function(x, covariate) {
     is.nona <- !is.na(covariate)
@@ -30,6 +30,8 @@ MLE <- function(x, covariate) {
 #' @param x [numeric]
 #' @param t [integer]
 #' @param vertex1,vertex2 [numeric] Used to control the shape of the triangular and trapezoidal distribution function, taking values between 0 and 1
+#' @param distribution [character] The type of distribution to use for the weight function. Options include "truncated_gaussian", "gaussian", "triangular", and "trapezoidal".
+#' @param verbose [logical] If TRUE, the function will print additional information during execution.
 #' 
 #' @example 
 #' reflimR_Sliding(x, t, distribution = "truncated_gaussian")
@@ -37,7 +39,7 @@ MLE <- function(x, covariate) {
 #' @export
 
 reflimR_Sliding <- function(x, t, distribution = "truncated_gaussian", log.scale = FALSE, standard_deviation = 5, 
-                standard_deviation_compare = NULL, vertex1 = NULL, vertex2 = NULL, window.size=NULL,step.width=NULL,
+                standard_deviation_compare = NULL, vertex1 = NULL, vertex2 = NULL, vertex1.2 = NULL, vertex2.2 = NULL, window.size=NULL,step.width=NULL, window.size_com = NULL, step.width_com = NULL,
                 lognormal=NULL,perc.trunc=2.5,n.min.window=200,n.min=100,apply.rounding=FALSE, weight_threshold = NULL, verbose = TRUE) {
     # if (distribution == "truncated_gaussian") {
     #     if (standard_deviation == 5) {
@@ -65,13 +67,13 @@ reflimR_Sliding <- function(x, t, distribution = "truncated_gaussian", log.scale
     # x <- as.numeric(x)
     # t <- as.integer(t)
     par(mar = c(3, 3, 3, 3))
-    if (is.null(standard_deviation_compare)) {  # no comparison
+    if (is.null(standard_deviation_compare) && is.null(vertex1.2) && is.null(vertex2.2) && is.null(window.size_com) && is.null(step.width_com)) {  # no comparison
         # print("no comparison")
         res <- w_sliding.reflim(x, t, distribution = distribution, standard_deviation = standard_deviation, vertex1 = vertex1, vertex2 = vertex2, window.size = window.size, step.width = step.width, lognormal = lognormal, weight_threshold = weight_threshold, verbose = verbose)
         gg_alist(result.sliding.reflim = res, log.scale = log.scale)
     } else {
         res1 <- w_sliding.reflim(x, t, distribution = distribution, standard_deviation = standard_deviation, vertex1 = vertex1, vertex2 = vertex2, window.size = window.size, step.width = step.width, lognormal = lognormal, weight_threshold = weight_threshold, verbose = verbose)
-        res2 <- w_sliding.reflim(x, t, distribution = distribution, standard_deviation = standard_deviation_compare, vertex1 = vertex1, vertex2 = vertex2, window.size = window.size, step.width = step.width, lognormal = lognormal, weight_threshold = weight_threshold, verbose = verbose)
+        res2 <- w_sliding.reflim(x, t, distribution = distribution, standard_deviation = standard_deviation_compare, vertex1 = vertex1.2, vertex2 = vertex2.2, window.size = window.size_com, step.width = step.width_com, lognormal = lognormal, weight_threshold = weight_threshold, verbose = verbose)
         gg_alist_custom_sd(result.sliding.reflim1 = res1, result.sliding.reflim2 = res2, log.scale = log.scale)
     }
     
@@ -713,8 +715,8 @@ w_sliding.reflim <- function(x,covariate,distribution = "truncated_gaussian", st
     
     
     if (distribution == "gaussian") {
-        if (verbose)
-        print("Using gaussian")
+        # if (verbose)
+        # print("Using gaussian")
         w_function <- makeWeightFunction("gaussian", sigma = standard_deviation)
         for (i in seq(min(covcomp), max(covcomp), length.out = n.steps)) {  # Generate an equally spaced sequence from the minimum to the maximum value of covcomp.
             www <- w_function(covcomp, mean = i)
@@ -767,12 +769,12 @@ w_sliding.reflim <- function(x,covariate,distribution = "truncated_gaussian", st
                     xxx <- xx[is.in.interval]
                     
                     if (distribution == "truncated_gaussian") {
-                        if (verbose) print("Using truncated gaussian")
+                        # if (verbose) print("Using truncated gaussian")
                         w_function <- makeWeightFunction(distribution, sigma = standard_deviation)
                         # www <- w_function(interval_cov, mean = median(interval_cov))
                         www <- w_function(interval_cov, mean = (min(interval_cov) + max(interval_cov)) / 2)
                     } else if (distribution == "triangular") {
-                        if (verbose) print("Using triangular")
+                        # if (verbose) print("Using triangular")
  
                         vertex1 <- if (is.null(vertex1)) 0.5 else vertex1
                         
@@ -783,7 +785,7 @@ w_sliding.reflim <- function(x,covariate,distribution = "truncated_gaussian", st
                         w_function <- makeWeightFunction(distribution, a = start_point.value, b = vertex1.value, c = end_point.value)
                         www <- w_function(interval_cov)
                     } else if (distribution == "trapezoidal") {
-                        if (verbose) print("Using trapezoidal")
+                        # if (verbose) print("Using trapezoidal")
 
                         vertex1 <- if (is.null(vertex1)) 0.3 else vertex1
                         vertex2 <- if (is.null(vertex2)) 0.6 else vertex2
@@ -877,11 +879,11 @@ w_sliding.reflim <- function(x,covariate,distribution = "truncated_gaussian", st
                     xxx <- xx[is.in.interval]
 
                     if (distribution == "truncated_gaussian") {
-                        if (verbose) print("Using truncated gaussian")
+                        # if (verbose) print("Using truncated gaussian")
                         w_function <- makeWeightFunction(distribution, sigma = standard_deviation)
                         www <- w_function(interval_cov, mean = (min(interval_cov) + max(interval_cov)) / 2)
                     } else if (distribution == "triangular") {
-                        if (verbose) print("Using triangular")
+                        # if (verbose) print("Using triangular")
                         vertex1 <- if (is.null(vertex1)) 0.5 else vertex1
                         
                         start_point.value <- min(interval_cov)
@@ -891,7 +893,7 @@ w_sliding.reflim <- function(x,covariate,distribution = "truncated_gaussian", st
                         w_function <- makeWeightFunction(distribution, a = start_point.value, b = vertex1.value, c = end_point.value)
                         www <- w_function(interval_cov)
                     } else if (distribution == "trapezoidal") {
-                        if (verbose) print("Using trapezoidal")
+                        # if (verbose) print("Using trapezoidal")
                         vertex1 <- if (is.null(vertex1)) 0.3 else vertex1
                         vertex2 <- if (is.null(vertex2)) 0.6 else vertex2
                         
