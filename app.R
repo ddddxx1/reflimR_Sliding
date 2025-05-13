@@ -56,6 +56,12 @@ if (require("shinyjs")) {
     install.packages("shinyjs")
     library(shinyjs)
 }
+# if (require("grid")) {
+#     library(grid)
+# } else {
+#     install.packages("grid")
+#     library(grid)
+# }
 
 if (require("shinycssloaders")) {
     library(shinycssloaders)
@@ -730,30 +736,85 @@ server <- function(input, output, session) {
         segment_data <- res[start_row:end_row, ]
         interval_cov <- as.numeric(segment_data$t)
         www <- as.numeric(segment_data$w)
+        www_sum <- sum(www, na.rm = TRUE)
         
-        plot(interval_cov, www, 
-             type = "l", 
-             col = "blue", 
-             lwd = 2, 
+        plot(interval_cov, www,
+             type = "l",
+             col = "blue",
+             lwd = 2,
              main = paste("Weight Distribution - Segment", segment_index),
              xlab = "Interval Covariate",
              ylab = "Weight")
         points(interval_cov, www, col = "red")
-        
-        www_sum <- sum(www, na.rm = TRUE)
-        # text(x = mean(interval_cov), 
-        #      y = mean(www), 
-        #      labels = paste("Sum of weights =", round(www_sum, 2)),
-        #      col = "darkgreen", 
-        #      cex = 1.2)
-        legend("bottomright",
-               inset = c(-0.25, 0),
-               legend = paste(round(www_sum, 2)),
+
+
+        # legend("bottomright",
+        #        inset = c(-0.25, 0),
+        #        legend = paste(round(www_sum, 2)),
+        #        col = "black",
+        #        pch = NA,
+        #        title = "Total weight:",
+        #        xpd = TRUE,
+        #        bty = "o")
+
+        legend("topright",
+               legend = paste("Total weight:", round(www_sum, 2)),
                col = "black",
                pch = NA,
-               title = "Total weight sum:",
-               xpd = TRUE,
-               bty = "n")
+               bty = "o",
+               bg = "white",
+               cex = 0.8,
+               inset = 0.02)
+        
+        # weight_plot <- ggplot(plot_data, aes(x = covariate, y = weight)) +
+        #     geom_line(color = "blue", size = 1) +
+        #     geom_point(color = "red", size = 2) +
+        #     labs(
+        #         title = paste("Weight Distribution - Segment", segment_index),
+        #         x = "Interval Covariate",
+        #         y = "Weight"
+        #     ) +
+        #     annotate("text",
+        #              x = max(interval_cov),
+        #              y = max(www),
+        #              label = paste("Total weight:", round(www_sum, 2)),
+        #              hjust = 1,
+        #              vjust = 1,
+        #              color = "black",
+        #              size = 4,
+        #              fontface = "bold",
+        #              bg.color = "white") +
+        #     theme_minimal() +
+        #     theme(
+        #         plot.title = element_text(hjust = 0.5, size = 14),
+        #         axis.title = element_text(size = 12),
+        #         axis.text = element_text(size = 10)
+        #     )
+        # 
+        # print(weight_plot)
+        
+        
+        # plot_data <- data.frame(
+        #     covariate = interval_cov,
+        #     weight = www
+        # )
+        # 
+        # weight_plot <- ggplot(plot_data, aes(x = covariate, y = weight)) +
+        #     geom_line(color = "blue", size = 1) +
+        #     geom_point(color = "red", size = 2) +
+        #     labs(
+        #         title = paste("Weight Distribution - Segment", segment_index),
+        #         x = "Interval Covariate",
+        #         y = "Weight"
+        #     ) +
+        #     theme_minimal() +
+        #     theme(
+        #         plot.title = element_text(hjust = 0.5, size = 14),
+        #         axis.title = element_text(size = 12),
+        #         axis.text = element_text(size = 10)
+        #     )
+        # 
+        # print(weight_plot)
     })
 
     output$scatterPlot2 <- renderPlot({

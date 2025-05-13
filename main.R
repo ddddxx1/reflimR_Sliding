@@ -24,17 +24,38 @@ MLE <- function(x, covariate) {
 #' reflimR_Sliding
 #' 
 #' @description 
-#' Window slider main function
-#' complete the entire process of the program
+#' Window slider main function that performs sliding window analysis with different weight functions.
+#' The function supports multiple distribution types and comparison between different parameter settings.
 #' 
-#' @param x [numeric]
-#' @param t [integer]
-#' @param vertex1,vertex2 [numeric] Used to control the shape of the triangular and trapezoidal distribution function, taking values between 0 and 1
-#' @param distribution [character] The type of distribution to use for the weight function. Options include "truncated_gaussian", "gaussian", "triangular", and "trapezoidal".
-#' @param verbose [logical] If TRUE, the function will print additional information during execution.
+#' @param x [numeric] Input measurement values
+#' @param t [integer] Time points or covariate values
+#' @param distribution [character] Weight function type: "truncated_gaussian", "gaussian", "triangular", or "trapezoidal"
+#' @param log.scale [logical] If TRUE, applies logarithmic scaling to the x-axis
+#' @param standard_deviation [numeric] Standard deviation for Gaussian distributions (default: 5)
+#' @param standard_deviation_compare [numeric] Standard deviation for comparison plot
+#' @param vertex1,vertex2 [numeric] Shape parameters for triangular/trapezoidal distributions (0-1)
+#' @param vertex1_com,vertex2_com [numeric] Shape parameters for comparison plot
+#' @param window.size,step.width [numeric] Window size and step width for sliding window
+#' @param window.size_com,step.width_com [numeric] Window parameters for comparison plot
+#' @param lognormal [logical] If TRUE, assumes log-normal distribution
+#' @param weight_threshold [numeric] Minimum weight sum threshold
+#' @param verbose [logical] If TRUE, prints additional information during execution
+#' 
+#' @return A plot object showing reference limits with confidence intervals
 #' 
 #' @example 
+#' # Basic usage with truncated Gaussian distribution
 #' reflimR_Sliding(x, t, distribution = "truncated_gaussian")
+#' 
+#' # Compare two different standard deviations
+#' reflimR_Sliding(x, t, distribution = "gaussian", 
+#'                standard_deviation = 3, 
+#'                standard_deviation_compare = 5)
+#' 
+#' # Using triangular distribution with comparison
+#' reflimR_Sliding(x, t, distribution = "triangular",
+#'                vertex1 = 0.3, 
+#'                vertex1_com = 0.7)
 #' 
 #' @export
 
@@ -67,7 +88,7 @@ reflimR_Sliding <- function(x, t, distribution = "truncated_gaussian", log.scale
     # x <- as.numeric(x)
     # t <- as.integer(t)
     par(mar = c(3, 3, 3, 3))
-    if (is.null(standard_deviation_compare) && is.null(vertex1_com) && is.null(vertex2_com) && is.null(window.size_com) && is.null(step.width_com)) {  # no comparison
+    if (is.null(standard_deviation_compare) && is.null(vertex1_com) && is.null(vertex2_com) && (is.null(window.size_com) || is.null(step.width_com))) {  # no comparison
         # print("no comparison")
         res <- w_sliding.reflim(x, t, distribution = distribution, standard_deviation = standard_deviation, vertex1 = vertex1, vertex2 = vertex2, window.size = window.size, step.width = step.width, lognormal = lognormal, weight_threshold = weight_threshold, verbose = verbose)
         gg_alist(result.sliding.reflim = res, log.scale = log.scale)
@@ -911,8 +932,7 @@ w_sliding.reflim <- function(x,covariate,distribution = "truncated_gaussian", st
                     
                     if (www_sum < weight_threshold) {
                         indr <- indr + 1
-                        warning("Weight sum is too low. Skipping this step.")
-                        print("Weight sum is too low. Skipping this step.")
+                        warning("Weight sum is too low. Expanding the window.")
                         next
                     }
                     
@@ -1167,8 +1187,7 @@ w_sliding.reflim.plot <- function(x,covariate,distribution = "truncated_gaussian
                     
                     if (www_sum < weight_threshold) {
                         indr <- indr + 1
-                        warning("Weight sum is too low. Skipping this step.")
-                        print("Weight sum is too low. Skipping this step.")
+                        warning("Weight sum is too low. Expanding the window.")
                         next
                     }
                     
