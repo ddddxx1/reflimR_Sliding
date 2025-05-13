@@ -56,6 +56,18 @@ if (require("shinyjs")) {
     install.packages("shinyjs")
     library(shinyjs)
 }
+if (require("truncnorm")) {
+    library(truncnorm)
+} else {
+    install.packages("truncnorm")
+    library(truncnorm)
+}
+# if (require("grid")) {
+#     library(grid)
+# } else {
+#     install.packages("grid")
+#     library(grid)
+# }
 
 if (require("shinycssloaders")) {
     library(shinycssloaders)
@@ -82,13 +94,13 @@ ui <- fluidPage(
     sidebarLayout(
         sidebarPanel(
             selectInput("distribution",
-                        "Choose weight function:",
+                        label = div(icon("wave-square"), "Choose weight function:"),
                         choices = c("Truncated gaussian" = "truncated_gaussian",
                                     "Gaussian" = "gaussian",
                                     "Triangular" = "triangular",
                                     "Trapezoidal" = "trapezoidal"),
                         selected = "truncated_gaussian"),
-            fileInput("datafile", "Upload CSV File", accept = c("text/csv", "text/comma-separated-values,text/plain", ".csv")),
+            fileInput("datafile",div(icon("file-csv"), "Upload CSV File"), accept = c("text/csv", "text/comma-separated-values,text/plain", ".csv")),
             actionButton('reset', 'Reset Input', icon = icon("trash")),
             selectInput("separator", "Select Separator:", choices = c("Comma(,)" = ",", "Semicolon(;)" = ";"), selected = ";"),
             
@@ -159,12 +171,27 @@ ui <- fluidPage(
 
         mainPanel(
             tabsetPanel(id = "tabs",
-                tabPanel("Dataset",
+                tabPanel("Dataset", icon = icon("database"),
                          fluidRow(
-                             column(12, plotOutput("uploadedScatterPlot"))
+                             column(12,  
+                                    h3("Reference Interval Estimation with Sliding Windows"),
+                                    p("This Shiny application implements reference interval estimation using sliding windows with various weighting functions. 
+                                     It supports multiple distribution types including truncated Gaussian, Gaussian, triangular, and trapezoidal distributions."),
+                                    p("Key features:"),
+                                    tags$ul(
+                                        tags$li("Flexible data input through CSV file upload"),
+                                        tags$li("Multiple weighting function options"),
+                                        tags$li("Visualization of reference intervals"),
+                                        tags$li("Parameter comparison capabilities"),
+                                        tags$li("Customizable window sizes and step widths")
+                                    ),
+                                    p("The application helps prevent abrupt jumps between age groups by implementing smooth transitions 
+                                     through weighted calculations, ensuring more reliable and clinically meaningful reference intervals."),
+                                    hr(),
+                                    plotOutput("uploadedScatterPlot"))
                         )
                 ),
-                tabPanel("Limit",
+                tabPanel("Limit", icon = icon("chart-line"),
                          fluidRow(
                              column(12, plotOutput("scatterPlot")),
                              column(12, div(style = "color: red;", textOutput("errorMessage"))),
@@ -172,7 +199,7 @@ ui <- fluidPage(
                              column(12, withSpinner(plotOutput("scatterPlot2")))
                          )
                 ),
-                tabPanel("Comparison",
+                tabPanel("Comparison", icon = icon("balance-scale"),
                          fluidRow(
                              conditionalPanel(
                                  condition = "input.tabs == 'Comparison'",
@@ -210,11 +237,18 @@ ui <- fluidPage(
                              )
                          )
                 ),
-                tabPanel("Settings",
+                tabPanel("Settings", icon = icon("cog"),
                          fluidRow(
                              column(12, textInput("weight_threshold", "Weight threshold:", value = NULL)),
-                             column(12, actionButton("reset", "Reset Input"))
-                         ))
+                             column(12, actionButton("reset", "Reset Input")),
+                             column(12, br()),
+                             column(12, br()),
+                             column(12, radioButtons("showMoreInfo", 
+                                                     "Show more information in console:", 
+                                                     choices = c("No" = "no", "Yes" = "yes"),
+                                                     selected = "no", inline = TRUE))
+                        )
+                )
             )
         )
     )
@@ -226,6 +260,7 @@ ui <- fluidPage(
 server <- function(input, output, session) {
     values <- reactiveValues(upload_state = NULL)
     weight_threshold_value <- reactiveVal(NULL)
+    show_more_info <- reactiveVal(FALSE)
     
     observeEvent(input$weight_threshold, {
         if (nzchar(input$weight_threshold)) {
@@ -249,6 +284,15 @@ server <- function(input, output, session) {
         weight_threshold_value(NULL)
         updateTextInput(session, "weight_threshold", value = "")
         showNotification("Weight threshold value has been reset.", type = "message")
+    })
+    
+    observeEvent(input$showMoreInfo, {
+        show_more_info(input$showMoreInfo == "yes")
+        if (input$showMoreInfo == "yes") {
+            showNotification("More information will be shown in the console.", type = "message")
+        } else {
+            showNotification("Less information will be shown in the console.", type = "message")
+        }
     })
     
     # Reset inputs when switching the distribution
@@ -397,13 +441,14 @@ server <- function(input, output, session) {
         result <- tryCatch({
             print(
                 paste(
-                    "-------------------Input values:",
+                    "------------Input values:",
                     "window_size:",
                     window_size,
                     "step_width:",
                     step_width,
                     "standard_deviation:",
-                    standard_deviation
+                    standard_deviation,
+                    "------------"
                 )
             )
             if (input$distribution == "truncated_gaussian") {
@@ -414,7 +459,8 @@ server <- function(input, output, session) {
                     standard_deviation = standard_deviation,
                     window.size = window_size,
                     step.width = step_width,
-                    weight_threshold = weight_threshold_value()
+                    weight_threshold = weight_threshold_value(),
+                    verbose = show_more_info()
                 )
             } else if (input$distribution == "gaussian") {
                 res <- w_sliding.reflim.plot(
@@ -424,7 +470,8 @@ server <- function(input, output, session) {
                     standard_deviation = standard_deviation,
                     window.size = NULL,
                     step.width = NULL,
-                    weight_threshold = weight_threshold_value()
+                    weight_threshold = weight_threshold_value(),
+                    verbose = show_more_info()
                 )
             } else if (input$distribution == "triangular") {
                 res <- w_sliding.reflim.plot(
@@ -434,7 +481,8 @@ server <- function(input, output, session) {
                     vertex1 = vertex1,
                     window.size = window_size,
                     step.width = step_width,
-                    weight_threshold = weight_threshold_value()
+                    weight_threshold = weight_threshold_value(),
+                    verbose = show_more_info()
                 )
             } else if (input$distribution == "trapezoidal") {
                 res <- w_sliding.reflim.plot(
@@ -445,7 +493,8 @@ server <- function(input, output, session) {
                     vertex2 = vertex2_trap,
                     window.size = window_size,
                     step.width = step_width,
-                    weight_threshold = weight_threshold_value()
+                    weight_threshold = weight_threshold_value(),
+                    verbose = show_more_info()
                 )
             }
             
@@ -519,29 +568,33 @@ server <- function(input, output, session) {
         result <- tryCatch({
             log_scale_bool <- ifelse(input$log_scale == "yes", TRUE, FALSE)
             if (input$distribution == "truncated_gaussian") {
-                run(user_x, user_t, distribution = input$distribution, log.scale = log_scale_bool,
+                reflimR_Sliding(user_x, user_t, distribution = input$distribution, log.scale = log_scale_bool,
                     standard_deviation = standard_deviation,
                     window.size = window_size,
                     step.width = step_width,
-                    weight_threshold = weight_threshold_value())
+                    weight_threshold = weight_threshold_value(), 
+                    verbose = show_more_info())
             } else if (input$distribution == "gaussian") {
-                run(user_x, user_t, distribution = input$distribution, log.scale = log_scale_bool,
+                reflimR_Sliding(user_x, user_t, distribution = input$distribution, log.scale = log_scale_bool,
                     standard_deviation = standard_deviation,
                     window.size = NULL,
                     step.width = NULL,
-                    weight_threshold = weight_threshold_value())
+                    weight_threshold = weight_threshold_value(), 
+                    verbose = show_more_info())
             } else if (input$distribution == "triangular") {
-                run(user_x, user_t, distribution = input$distribution, log.scale = log_scale_bool,
+                reflimR_Sliding(user_x, user_t, distribution = input$distribution, log.scale = log_scale_bool,
                     vertex1 = vertex1,
                     window.size = window_size,
                     step.width = step_width,
-                    weight_threshold = weight_threshold_value())
+                    weight_threshold = weight_threshold_value(),
+                    verbose = show_more_info())
             } else if (input$distribution == "trapezoidal") {
                 run(user_x, user_t, distribution = input$distribution, log.scale = log_scale_bool,
                      vertex1 = vertex1_trap, vertex2 = vertex2_trap,
                     window.size = window_size,
                     step.width = step_width,
-                    weight_threshold = weight_threshold_value())
+                    weight_threshold = weight_threshold_value(),
+                    verbose = show_more_info())
             }
         }, error = function(e) {
             message("Error: ", e$message)
@@ -571,15 +624,16 @@ server <- function(input, output, session) {
     
     output$uploadedScatterPlot <- renderPlot({
         user_data <- reactive_data()
-        if (is.null(user_data)) {
+        
+        if (is.null(user_data) || all(is.na(user_data$t)) || all(is.na(user_data$x))) {
             return(NULL)
         }
-        
+
         plot(user_data$t, user_data$x,
-             xlab = input$tcol, 
-             ylab = input$xcol, 
+             xlab = input$tcol,
+             ylab = input$xcol,
              main = "Scatter Plot of Uploaded Data",
-             pch = 16, 
+             pch = 16,
              col = "darkblue")
     })
 
@@ -616,7 +670,9 @@ server <- function(input, output, session) {
             current_start_time - prev_start_time
         } else 0
 
-        print(paste("window_size (point):", end_row - start_row + 1, "from:", start_row, "to:", end_row, ", window size (long):", as.numeric(res[end_row, "t"]) - as.numeric(res[start_row, "t"])))
+        if (show_more_info())
+        print(paste("window.size (point):", end_row - start_row + 1, "from:", start_row, "to:", end_row, ", window.size (long):", as.numeric(res[end_row, "t"]) - as.numeric(res[start_row, "t"]), 
+                          "from:", as.numeric(res[start_row, "t"]), "to", as.numeric(res[end_row, "t"])))
         w_values <- as.numeric(segment_data$w)
         
         total_w <- sum(w_values, na.rm = TRUE)
@@ -636,7 +692,7 @@ server <- function(input, output, session) {
              col = w_colors)
         
         legend("topright",
-               inset = c(-0.2, 0),
+               inset = c(-0.15, 0),
                legend = c("w = 1", "w = 0.8", "w = 0.5"),
                col = color_palette[c(100, 80, 50)],
                pch = 16,
@@ -686,30 +742,85 @@ server <- function(input, output, session) {
         segment_data <- res[start_row:end_row, ]
         interval_cov <- as.numeric(segment_data$t)
         www <- as.numeric(segment_data$w)
+        www_sum <- sum(www, na.rm = TRUE)
         
-        plot(interval_cov, www, 
-             type = "l", 
-             col = "blue", 
-             lwd = 2, 
+        plot(interval_cov, www,
+             type = "l",
+             col = "blue",
+             lwd = 2,
              main = paste("Weight Distribution - Segment", segment_index),
              xlab = "Interval Covariate",
              ylab = "Weight")
         points(interval_cov, www, col = "red")
-        
-        www_sum <- sum(www, na.rm = TRUE)
-        # text(x = mean(interval_cov), 
-        #      y = mean(www), 
-        #      labels = paste("Sum of weights =", round(www_sum, 2)),
-        #      col = "darkgreen", 
-        #      cex = 1.2)
-        legend("bottomright",
-               inset = c(-0.25, 0),
-               legend = paste(round(www_sum, 2)),
+
+
+        # legend("bottomright",
+        #        inset = c(-0.25, 0),
+        #        legend = paste(round(www_sum, 2)),
+        #        col = "black",
+        #        pch = NA,
+        #        title = "Total weight:",
+        #        xpd = TRUE,
+        #        bty = "o")
+
+        legend("topright",
+               legend = paste("Total weight:", round(www_sum, 2)),
                col = "black",
                pch = NA,
-               title = "Total weight sum:",
-               xpd = TRUE,
-               bty = "n")
+               bty = "o",
+               bg = "white",
+               cex = 0.8,
+               inset = 0.02)
+        
+        # weight_plot <- ggplot(plot_data, aes(x = covariate, y = weight)) +
+        #     geom_line(color = "blue", size = 1) +
+        #     geom_point(color = "red", size = 2) +
+        #     labs(
+        #         title = paste("Weight Distribution - Segment", segment_index),
+        #         x = "Interval Covariate",
+        #         y = "Weight"
+        #     ) +
+        #     annotate("text",
+        #              x = max(interval_cov),
+        #              y = max(www),
+        #              label = paste("Total weight:", round(www_sum, 2)),
+        #              hjust = 1,
+        #              vjust = 1,
+        #              color = "black",
+        #              size = 4,
+        #              fontface = "bold",
+        #              bg.color = "white") +
+        #     theme_minimal() +
+        #     theme(
+        #         plot.title = element_text(hjust = 0.5, size = 14),
+        #         axis.title = element_text(size = 12),
+        #         axis.text = element_text(size = 10)
+        #     )
+        # 
+        # print(weight_plot)
+        
+        
+        # plot_data <- data.frame(
+        #     covariate = interval_cov,
+        #     weight = www
+        # )
+        # 
+        # weight_plot <- ggplot(plot_data, aes(x = covariate, y = weight)) +
+        #     geom_line(color = "blue", size = 1) +
+        #     geom_point(color = "red", size = 2) +
+        #     labs(
+        #         title = paste("Weight Distribution - Segment", segment_index),
+        #         x = "Interval Covariate",
+        #         y = "Weight"
+        #     ) +
+        #     theme_minimal() +
+        #     theme(
+        #         plot.title = element_text(hjust = 0.5, size = 14),
+        #         axis.title = element_text(size = 12),
+        #         axis.text = element_text(size = 10)
+        #     )
+        # 
+        # print(weight_plot)
     })
 
     output$scatterPlot2 <- renderPlot({
@@ -727,7 +838,8 @@ server <- function(input, output, session) {
     })
     
     observeEvent(input$compare, {
-        print("begin to compare")
+        if (show_more_info() == TRUE)
+        print("Use comparison feature.")
         user_data <- reactive_data()
         user_x <- user_data$x
         user_t <- user_data$t
@@ -779,20 +891,23 @@ server <- function(input, output, session) {
             
             tryCatch({
                 log_scale_bool <- ifelse(input$log_scale == "yes", TRUE, FALSE)
+                if (show_more_info())
                 print(paste("log_scale_bool:", log_scale_bool))
 
                 res1 <- do.call(w_sliding.reflim, 
                                 c(list(user_x, user_t, 
                                        distribution = input$distribution,
                                        plot.weight = FALSE,
-                                       weight_threshold = weight_threshold_value()), 
+                                       weight_threshold = weight_threshold_value(),
+                                       verbose = show_more_info()), 
                                   original_params))
                 
                 res2 <- do.call(w_sliding.reflim, 
                                 c(list(user_x, user_t, 
                                        distribution = input$distribution,
                                        plot.weight = FALSE,
-                                       weight_threshold = weight_threshold_value()), 
+                                       weight_threshold = weight_threshold_value(),
+                                       verbose = show_more_info()), 
                                   params))
                 
                 alist_custom_sd_plot <- gg_alist_custom_sd(res1, res2, log.scale = log_scale_bool)
