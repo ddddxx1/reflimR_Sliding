@@ -56,6 +56,12 @@ if (require("shinyjs")) {
     install.packages("shinyjs")
     library(shinyjs)
 }
+if (require("truncnorm")) {
+    library(truncnorm)
+} else {
+    install.packages("truncnorm")
+    library(truncnorm)
+}
 # if (require("grid")) {
 #     library(grid)
 # } else {
