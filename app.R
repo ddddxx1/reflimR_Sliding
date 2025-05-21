@@ -1,4 +1,4 @@
-#MLE
+#MLE-3
 
 
 ####################################### WEILCOME TO THE SHINY APP ###########################################
@@ -120,21 +120,21 @@ ui <- fluidPage(
                 condition = "input.distribution == 'truncated_gaussian'",
                 textInput("window_size_truncated", "Window Size:", value = ""),
                 textInput("step_width_truncated", "Step Width:", value = ""),
-                numericInput("standard_deviation_truncated", "Standard deviation:", value = 5),
-                radioButtons(
-                    "log_scale",
-                    "Log Scale:",
-                    choices = c("No" = "no", "Yes" = "yes"),
-                    selected = "no"
-                )
+                numericInput("standard_deviation_truncated", "Standard deviation:", value = 5)
+                # radioButtons(
+                #     "log_scale",
+                #     "Log Scale:",
+                #     choices = c("No" = "no", "Yes" = "yes"),
+                #     selected = "no"
+                # )
             ), 
             # for gaussian
             conditionalPanel(
                 condition = "input.distribution == 'gaussian'",
                 numericInput("standard_deviation_gaussian",
                              "Standard deviation:",
-                             value = 5),
-                radioButtons("log_scale", "Log Scale:", choices = c("No" = "no", "Yes" = "yes"), selected = "no")
+                             value = 5)
+                # radioButtons("log_scale", "Log Scale:", choices = c("No" = "no", "Yes" = "yes"), selected = "no")
             ),
             # for triangular
             conditionalPanel(
@@ -142,14 +142,14 @@ ui <- fluidPage(
                 textInput("window_size_triangular", "Window Size:", value = ""),
                 textInput("step_width_triangular", "Step Width:", value = ""),
                 # numericInput("a", "Parameter a:", value = 0),
-                numericInput("vertex1", "Vertex:", value = 0.5),
+                numericInput("vertex1", "Vertex:", value = 0.5)
                 # numericInput("c", "Paramater c:", value = 1)
-                radioButtons(
-                    "log_scale",
-                    "Log Scale:",
-                    choices = c("No" = "no", "Yes" = "yes"),
-                    selected = "no"
-                )
+                # radioButtons(
+                #     "log_scale",
+                #     "Log Scale:",
+                #     choices = c("No" = "no", "Yes" = "yes"),
+                #     selected = "no"
+                # )
             ), 
             # for trapezoidal
             conditionalPanel(
@@ -158,14 +158,26 @@ ui <- fluidPage(
                 textInput("step_width_trapezoidal", "Step Width:", value = ""),
                 # numericInput("a_trap", "Parameter a:", value = 0),
                 numericInput("vertex1_trap", "Top left vertex:", value = 0.3),
-                numericInput("vertex2_trap", "Top right vertex:", value = 0.6),
+                numericInput("vertex2_trap", "Top right vertex:", value = 0.6)
                 # numericInput("d_trap", "Parameter d:", value = 1)
-                radioButtons(
-                    "log_scale",
-                    "Log Scale:",
-                    choices = c("No" = "no", "Yes" = "yes"),
-                    selected = "no"
-                )
+                # radioButtons(
+                #     "log_scale",
+                #     "Log Scale:",
+                #     choices = c("No" = "no", "Yes" = "yes"),
+                #     selected = "no"
+                # )
+            ),
+            radioButtons(
+                "log_scale",
+                "Log Scale:",
+                choices = c("No" = "no", "Yes" = "yes"),
+                selected = "no"
+            ),
+            radioButtons(
+                "merthod_choice",
+                "Choose Method:",
+                choices = c("reflmR" = "reflimR", "reflimLOD" = "reflimLOD"),
+                selected = "reflimR"
             )
         ),
 
@@ -193,9 +205,9 @@ ui <- fluidPage(
                 ),
                 tabPanel("Limit", icon = icon("chart-line"),
                          fluidRow(
-                             column(12, plotOutput("scatterPlot")),
+                             column(12, withSpinner(plotOutput("scatterPlot"))),
                              column(12, div(style = "color: red;", textOutput("errorMessage"))),
-                             column(12, plotOutput("weightDistPlot")),
+                             column(12, withSpinner(plotOutput("weightDistPlot"))),
                              column(12, withSpinner(plotOutput("scatterPlot2")))
                          )
                 ),
@@ -567,34 +579,55 @@ server <- function(input, output, session) {
 
         result <- tryCatch({
             log_scale_bool <- ifelse(input$log_scale == "yes", TRUE, FALSE)
+            use_mle <- ifelse(input$merthod_choice == "reflimR", FALSE, TRUE)
             if (input$distribution == "truncated_gaussian") {
+                if (show_more_info()) {
+                    print(paste("log scale:", log_scale_bool))
+                    print(paste("Using method:", input$merthod_choice))
+                } 
                 reflimR_Sliding(user_x, user_t, distribution = input$distribution, log.scale = log_scale_bool,
                     standard_deviation = standard_deviation,
                     window.size = window_size,
                     step.width = step_width,
                     weight_threshold = weight_threshold_value(), 
-                    verbose = show_more_info())
+                    verbose = show_more_info(),
+                    MLE = use_mle)
             } else if (input$distribution == "gaussian") {
+                if (show_more_info()) {
+                    print(paste("log scale:", log_scale_bool))
+                    print(paste("Using method:", input$merthod_choice))
+                } 
                 reflimR_Sliding(user_x, user_t, distribution = input$distribution, log.scale = log_scale_bool,
                     standard_deviation = standard_deviation,
                     window.size = NULL,
                     step.width = NULL,
                     weight_threshold = weight_threshold_value(), 
-                    verbose = show_more_info())
+                    verbose = show_more_info(),
+                    MLE = use_mle)
             } else if (input$distribution == "triangular") {
+                if (show_more_info()) {
+                    print(paste("log scale:", log_scale_bool))
+                    print(paste("Using method:", input$merthod_choice))
+                } 
                 reflimR_Sliding(user_x, user_t, distribution = input$distribution, log.scale = log_scale_bool,
                     vertex1 = vertex1,
                     window.size = window_size,
                     step.width = step_width,
                     weight_threshold = weight_threshold_value(),
-                    verbose = show_more_info())
+                    verbose = show_more_info(),
+                    MLE = use_mle)
             } else if (input$distribution == "trapezoidal") {
-                run(user_x, user_t, distribution = input$distribution, log.scale = log_scale_bool,
+                if (show_more_info()) {
+                    print(paste("log scale:", log_scale_bool))
+                    print(paste("Using method:", input$merthod_choice))
+                } 
+                reflimR_Sliding(user_x, user_t, distribution = input$distribution, log.scale = log_scale_bool,
                      vertex1 = vertex1_trap, vertex2 = vertex2_trap,
                     window.size = window_size,
                     step.width = step_width,
                     weight_threshold = weight_threshold_value(),
-                    verbose = show_more_info())
+                    verbose = show_more_info(),
+                    MLE = use_mle)
             }
         }, error = function(e) {
             message("Error: ", e$message)
@@ -891,26 +924,31 @@ server <- function(input, output, session) {
             
             tryCatch({
                 log_scale_bool <- ifelse(input$log_scale == "yes", TRUE, FALSE)
+                use_mle <- ifelse(input$merthod_choice == "reflimR", FALSE, TRUE)
                 if (show_more_info())
                 print(paste("log_scale_bool:", log_scale_bool))
 
                 res1 <- do.call(w_sliding.reflim, 
                                 c(list(user_x, user_t, 
                                        distribution = input$distribution,
+                                       lognormal = log_scale_bool,
                                        plot.weight = FALSE,
                                        weight_threshold = weight_threshold_value(),
-                                       verbose = show_more_info()), 
+                                       verbose = show_more_info(),
+                                       MLE = use_mle), 
                                   original_params))
                 
                 res2 <- do.call(w_sliding.reflim, 
                                 c(list(user_x, user_t, 
                                        distribution = input$distribution,
+                                       lognormal = log_scale_bool,
                                        plot.weight = FALSE,
                                        weight_threshold = weight_threshold_value(),
-                                       verbose = show_more_info()), 
+                                       verbose = show_more_info(),
+                                       MLE = use_mle), 
                                   params))
                 
-                alist_custom_sd_plot <- gg_alist_custom_sd(res1, res2, log.scale = log_scale_bool)
+                alist_custom_sd_plot <- gg_alist_compare(res1, res2, log.scale = log_scale_bool)
                 plot(alist_custom_sd_plot)
                 
                 output$paError <- renderText({""})
@@ -965,7 +1003,7 @@ server <- function(input, output, session) {
     #                                          window.size = window_size,
     #                                          step.width = step_width,
     #                                          plot.weight = FALSE)
-    #                 alist_custom_sd_plot <- gg_alist_custom_sd(res1, res2, log.scale = log_scale_bool)
+    #                 alist_custom_sd_plot <- gg_alist_compare(res1, res2, log.scale = log_scale_bool)
     #                 plot(alist_custom_sd_plot)
     # 
     #                 output$paError <- renderText({""})
