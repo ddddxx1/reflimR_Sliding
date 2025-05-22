@@ -287,7 +287,7 @@ reflimR_Sliding <- function(x, t, distribution = "truncated_gaussian", log.scale
         res2 <- w_sliding.reflim(x, t, distribution = distribution, standard_deviation = standard_deviation_compare, 
                                  vertex1 = vertex1_com, vertex2 = vertex2_com, 
                                  window.size = window.size_com, step.width = step.width_com, lognormal = lognormal, 
-                                 weight_threshold = weight_threshold, verbose = verbosem, MLE = MLE)
+                                 weight_threshold = weight_threshold, verbose = verbose, MLE = MLE)
         gg_alist_compare(result.sliding.reflim1 = res1, result.sliding.reflim2 = res2, log.scale = log.scale)
     }
     

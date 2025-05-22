@@ -921,36 +921,40 @@ server <- function(input, output, session) {
                                           vertex2 = input$vertex2_trap
                                       )
             )
-            
+
             tryCatch({
                 log_scale_bool <- ifelse(input$log_scale == "yes", TRUE, FALSE)
                 use_mle <- ifelse(input$merthod_choice == "reflimR", FALSE, TRUE)
-                if (show_more_info())
-                print(paste("log_scale_bool:", log_scale_bool))
+                
+                if (show_more_info()){
+                    print(paste("log_scale_bool:", log_scale_bool))
+                    print(paste("Using method:", if (use_mle) "reflimLOD" else "reflimR"))
+                }
+                
 
-                res1 <- do.call(w_sliding.reflim, 
-                                c(list(user_x, user_t, 
+                res1 <- do.call(w_sliding.reflim,
+                                c(list(user_x, user_t,
                                        distribution = input$distribution,
-                                       lognormal = log_scale_bool,
                                        plot.weight = FALSE,
                                        weight_threshold = weight_threshold_value(),
                                        verbose = show_more_info(),
-                                       MLE = use_mle), 
+                                       MLE = use_mle
+                                       ),
                                   original_params))
-                
-                res2 <- do.call(w_sliding.reflim, 
-                                c(list(user_x, user_t, 
+
+                res2 <- do.call(w_sliding.reflim,
+                                c(list(user_x, user_t,
                                        distribution = input$distribution,
-                                       lognormal = log_scale_bool,
                                        plot.weight = FALSE,
                                        weight_threshold = weight_threshold_value(),
                                        verbose = show_more_info(),
-                                       MLE = use_mle), 
+                                       MLE = use_mle
+                                       ),
                                   params))
-                
+
                 alist_custom_sd_plot <- gg_alist_compare(res1, res2, log.scale = log_scale_bool)
                 plot(alist_custom_sd_plot)
-                
+
                 output$paError <- renderText({""})
             }, error = function(e) {
                 output$paError <- renderText({
@@ -958,66 +962,11 @@ server <- function(input, output, session) {
                 })
             })
         })
+        
+        
     })
     
-    # whether supported comparison types
-    # output$falseDistribution <- renderText({
-    #     if (input$distribution != "truncated_gaussian" && input$distribution != "gaussian") {
-    #         return("This distribution does not support comparison!")
-    #     }
-    #     return(NULL)
-    # })
-    # 
-    # # Calculation/Drawing/ErrorReporting in Comparison
-    # observeEvent(input$compare, {
-    #     if (input$distribution == "truncated_gaussian" || input$distribution == "gaussian") {
-    #         print("begin to compare")
-    #         user_data <- reactive_data()
-    #         user_x <- user_data$x
-    #         user_t <- user_data$t
-    # 
-    #         output$comparisonPlot <- renderPlot({
-    #             window_size <- if (input$distribution == "truncated_gaussian") {
-    #                 if (nzchar(input$window_size_truncated)) as.numeric(input$window_size_truncated) else NULL
-    #             } else NULL
-    #             step_width <- if (input$distribution == "truncated_gaussian") {
-    #                 if (nzchar(input$step_width_truncated)) as.numeric(input$step_width_truncated) else NULL
-    #             } else NULL
-    #             standard_deviation <- switch(input$distribution,
-    #                                          "truncated_gaussian" = input$standard_deviation_truncated,
-    #                                          "gaussian" = input$standard_deviation_gaussian,
-    #                                          NULL)
-    #             tryCatch({
-    #                 log_scale_bool <- ifelse(input$log_scale == "yes", TRUE, FALSE)
-    #                 print(paste("log_scale_bool:", log_scale_bool))
-    # 
-    #                 res1 <- w_sliding.reflim(user_x, user_t, 
-    #                                          distribution = input$distribution, 
-    #                                          standard_deviation = standard_deviation, 
-    #                                          window.size = window_size,
-    #                                          step.width = step_width,
-    #                                          plot.weight = FALSE)
-    #                 res2 <- w_sliding.reflim(user_x, user_t, 
-    #                                          distribution = input$distribution, 
-    #                                          standard_deviation = input$comparison_sd, 
-    #                                          window.size = window_size,
-    #                                          step.width = step_width,
-    #                                          plot.weight = FALSE)
-    #                 alist_custom_sd_plot <- gg_alist_compare(res1, res2, log.scale = log_scale_bool)
-    #                 plot(alist_custom_sd_plot)
-    # 
-    #                 output$paError <- renderText({""})
-    #             }, error = function(e) {
-    #                 output$paError <- renderText({
-    #                     return("Error: Disallowed Parameters. Please change!")
-    #                 })
-    #             })
-    # 
-    #         })
-    #     } else {
-    #         showNotification("Comparison only available for Gaussian or Truncated Gaussian distributions", type = "error")
-    #     }
-    # })
+
 
 }
 
