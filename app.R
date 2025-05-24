@@ -174,7 +174,7 @@ ui <- fluidPage(
                 selected = "no"
             ),
             radioButtons(
-                "merthod_choice",
+                "method_choice",
                 "Choose Method:",
                 choices = c("reflmR" = "reflimR", "reflimLOD" = "reflimLOD"),
                 selected = "reflimR"
@@ -205,10 +205,10 @@ ui <- fluidPage(
                 ),
                 tabPanel("Limit", icon = icon("chart-line"),
                          fluidRow(
-                             column(12, withSpinner(plotOutput("scatterPlot"))),
+                             column(12, withSpinner(plotOutput("scatterPlot2"))),
                              column(12, div(style = "color: red;", textOutput("errorMessage"))),
-                             column(12, withSpinner(plotOutput("weightDistPlot"))),
-                             column(12, withSpinner(plotOutput("scatterPlot2")))
+                             column(12, plotOutput("scatterPlot")),
+                             column(12, plotOutput("weightDistPlot"))
                          )
                 ),
                 tabPanel("Comparison", icon = icon("balance-scale"),
@@ -357,6 +357,16 @@ server <- function(input, output, session) {
         values$upload_state <- 'uploaded'
     })
     
+    observeEvent(input$xcol, {
+        file_data <- dataset_input()
+        if (!is.null(input$xcol)) {
+            x_values <- file_data[[input$xcol]]
+            if (any(x_values == 0, na.rm = TRUE) && input$method_choice == "reflimR") {
+                showNotification("Dataset contains zero values, recommend using reflimLOD method", type = "warning", duration = 10)
+            }
+        }
+    })
+    
     observeEvent(input$reset, {
         values$upload_state <- 'reset'
         shinyjs::reset("datafile")
@@ -396,6 +406,7 @@ server <- function(input, output, session) {
                               choices = col_names,
                               selected = col_names[2])
         }
+        
     })
     
 
@@ -579,11 +590,11 @@ server <- function(input, output, session) {
 
         result <- tryCatch({
             log_scale_bool <- ifelse(input$log_scale == "yes", TRUE, FALSE)
-            use_mle <- ifelse(input$merthod_choice == "reflimR", FALSE, TRUE)
+            use_mle <- ifelse(input$method_choice == "reflimR", FALSE, TRUE)
             if (input$distribution == "truncated_gaussian") {
                 if (show_more_info()) {
                     print(paste("log scale:", log_scale_bool))
-                    print(paste("Using method:", input$merthod_choice))
+                    print(paste("Using method:", input$method_choice))
                 } 
                 reflimR_Sliding(user_x, user_t, distribution = input$distribution, log.scale = log_scale_bool,
                     standard_deviation = standard_deviation,
@@ -595,7 +606,7 @@ server <- function(input, output, session) {
             } else if (input$distribution == "gaussian") {
                 if (show_more_info()) {
                     print(paste("log scale:", log_scale_bool))
-                    print(paste("Using method:", input$merthod_choice))
+                    print(paste("Using method:", input$method_choice))
                 } 
                 reflimR_Sliding(user_x, user_t, distribution = input$distribution, log.scale = log_scale_bool,
                     standard_deviation = standard_deviation,
@@ -607,7 +618,7 @@ server <- function(input, output, session) {
             } else if (input$distribution == "triangular") {
                 if (show_more_info()) {
                     print(paste("log scale:", log_scale_bool))
-                    print(paste("Using method:", input$merthod_choice))
+                    print(paste("Using method:", input$method_choice))
                 } 
                 reflimR_Sliding(user_x, user_t, distribution = input$distribution, log.scale = log_scale_bool,
                     vertex1 = vertex1,
@@ -619,7 +630,7 @@ server <- function(input, output, session) {
             } else if (input$distribution == "trapezoidal") {
                 if (show_more_info()) {
                     print(paste("log scale:", log_scale_bool))
-                    print(paste("Using method:", input$merthod_choice))
+                    print(paste("Using method:", input$method_choice))
                 } 
                 reflimR_Sliding(user_x, user_t, distribution = input$distribution, log.scale = log_scale_bool,
                      vertex1 = vertex1_trap, vertex2 = vertex2_trap,
@@ -862,12 +873,24 @@ server <- function(input, output, session) {
         if (is.null(alistplot)) {
             return(NULL)
         }
-        res <- alistplot
-        print(alistplot)
+        # res <- alistplot
+        # print(alistplot)
 
-        # plot(res$t, res$x, xlab = "t", ylab = "x",
-        #      main = paste("Scatter"),
-        #      pch = 16, col = "blue")
+
+        method_name <- if(input$method_choice == "reflimR") "reflimR" else "reflimLOD"
+        plot_title <- paste("Reference Limits Plot using", method_name, "method")
+        
+        alistplot + ggtitle(plot_title) + 
+            theme(plot.title = element_text(face = "bold", hjust = 0.5))
+    })
+    
+    observeEvent(input$method_choice, {
+        method_name <- if(input$method_choice == "reflimR") "reflimR" else "reflimLOD.MLE"
+        showNotification(
+            paste("Reference Limits Comparison using", method_name, "method"),
+            type = "message",
+            duration = 5
+        )
     })
     
     observeEvent(input$compare, {
@@ -924,7 +947,7 @@ server <- function(input, output, session) {
 
             tryCatch({
                 log_scale_bool <- ifelse(input$log_scale == "yes", TRUE, FALSE)
-                use_mle <- ifelse(input$merthod_choice == "reflimR", FALSE, TRUE)
+                use_mle <- ifelse(input$method_choice == "reflimR", FALSE, TRUE)
                 
                 if (show_more_info()){
                     print(paste("log_scale_bool:", log_scale_bool))

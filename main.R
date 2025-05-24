@@ -147,7 +147,7 @@ w_reflimLOD.MLE <- function(measured.values, lod, n.lod, weights = NULL, lambda 
     
     obj.fun <- function(pars){
         # sigma 必须大于0
-        if (pars[2] <= 0) return(1e10)  # 返回一个极大的惩罚值，防止优化器继续这个方向
+        if (pars[2] <= 0) return(1e10)  # Returns a very large penalty value to prevent the optimizer from continuing in this direction
         result <- tryCatch({
             pnorm.lod <- ptruncnorm(transformed.lod, b=normal.result$upper.truncation, mean=pars[1], sd=pars[2])
             # 防止概率为0或1
@@ -181,7 +181,7 @@ w_reflimLOD.MLE <- function(measured.values, lod, n.lod, weights = NULL, lambda 
     optim.result <- optim(
         pars.initial, obj.fun,
         method = "L-BFGS-B",
-        lower = c(mu - 5 * sigma, 0.001),   # sigma最小0.001
+        lower = c(mu - 5 * sigma, 0.001),   # Sigma minimum 0.001
         upper = c(mu + 5 * sigma, 5 * sigma),
         control = list(maxit = 1000)
     )
