@@ -173,7 +173,7 @@ w_reflimLOD.MLE <- function(measured.values, lod, n.lod, weights = NULL, lambda 
     mu <- normal.result$upper.truncation - sigma*qnorm(0.975)
     
     pars.initial <- c(mu,sigma)
-    if (verbose) print(paste("initial mu: ", mu, "initial sigma: ", sigma))
+    # if (verbose) print(paste("initial mu: ", mu, "initial sigma: ", sigma))
     # print(paste("initial pars", pars.initial))
     # optim.result <- optim(pars.initial,obj.fun) # -10774595   9083789 
     # browser()
@@ -190,7 +190,7 @@ w_reflimLOD.MLE <- function(measured.values, lod, n.lod, weights = NULL, lambda 
     
     # print(qnorm(c(0.025,0.975), mean=optim.result$par[1], sd=optim.result$par[2]))
     lims <- box.cox.inv.trans(qnorm(c(0.025,0.975),mean=optim.result$par[1],sd=optim.result$par[2]),lambda=lambda)  # 0 Inf
-    if (verbose) print(paste("lowerlimt: ", lims[1], "upperlimit: ", lims[2]))
+    # if (verbose) print(paste("lowerlimt: ", lims[1], "upperlimit: ", lims[2]))
     # if (is.nan(lims[1])){
     #     lims[1] <- 0
     # }
@@ -278,6 +278,7 @@ reflimR_Sliding <- function(x, t, distribution = "truncated_gaussian", log.scale
                                 vertex1 = vertex1, vertex2 = vertex2, 
                                 window.size = window.size, step.width = step.width, lognormal = lognormal, 
                                 weight_threshold = weight_threshold, verbose = verbose, MLE = MLE)
+        if(verbose) print(res[, 1:2])
         gg_alist(result.sliding.reflim = res, log.scale = log.scale)
     } else {
         res1 <- w_sliding.reflim(x, t, distribution = distribution, standard_deviation = standard_deviation, 
