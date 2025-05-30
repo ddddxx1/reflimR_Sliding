@@ -1,4 +1,4 @@
-#new_iboxplot
+# MLE-4
 
 # source("stats-3200273-supplementary.R")
 
@@ -30,7 +30,7 @@ MLE <- function(data, weights = NULL, verbose = FALSE) {
     
     # return(reflimLOD.MLE(data, lod_value, n_at_lod))
     
-    return(w_reflimLOD.MLE(data, weights = weights, lod_value, n_at_lod, verbose = verbose))
+    return(w_reflimLOD.MLE(measured.values = data, weights = weights, lod = lod_value, n.lod = n_at_lod, verbose = verbose))
 }
 
 MLE_o <- function(data) {
@@ -116,6 +116,7 @@ w_reflimLOD.MLE <- function(measured.values, lod, n.lod, weights = NULL, lambda 
     transformed.lod <- box.cox.trans(lod, lambda = lambda)
     
     normal.result <- modTrunc(transformed.measured.values, transformed.lod, n.lod, right.quantile = right.quantile)
+    # print(normal.result)
     
     if (is.na(normal.result$upper.truncation)){
         return(list(lower.limit=NA, upper.limit=NA, mu.log=NA, sigma.log=NA, 
@@ -152,6 +153,10 @@ w_reflimLOD.MLE <- function(measured.values, lod, n.lod, weights = NULL, lambda 
             pnorm.lod <- ptruncnorm(transformed.lod, b=normal.result$upper.truncation, mean=pars[1], sd=pars[2])
             # Prevent probability of 0 or 1
             if (is.nan(pnorm.lod) || pnorm.lod <= 1e-10 || pnorm.lod >= 1 - 1e-10) return(1e10)
+            # print(lod)
+            lod_weights <- weights[measured.values <= lod]
+            selected_weights <- weights[normal.result$selected.values.index]
+            # print(paste("lod_weights", sum(lod_weights), "selected_weights", sum(selected_weights)))
             d_trunc <- dtruncnorm(normal.result$selected.values, a=transformed.lod, b=normal.result$upper.truncation, mean=pars[1], sd=pars[2])
             if (any(is.nan(d_trunc)) || any(d_trunc <= 1e-10)) return(1e10)
             # val <- -n.lod * log(pnorm.lod) -
@@ -203,6 +208,70 @@ w_reflimLOD.MLE <- function(measured.values, lod, n.lod, weights = NULL, lambda 
                 sigma.log=unname(optim.result$par[2]),upper.truncation=unname(box.cox.inv.trans(normal.result$upper.truncation,lambda=lambda)),
                 selected.values=box.cox.inv.trans(normal.result$selected.values,lambda=lambda),minus.log.likelihood=optim.result$value,lod=lod,
                 n.lod=n.lod,lambda=lambda))
+}
+
+box.cox.trans <- function(x,lambda=1){
+    if (lambda==0){
+        return(log(x))
+    }else{
+        return((x^lambda - 1)/lambda)
+    }
+}
+
+modTrunc <- function(measured.values, lod, n.lod, right.quantile=0.75){
+    
+    n.min.values <- 2*n.lod+1
+    quantile.factor <- qnorm(0.975)/qnorm(right.quantile)
+
+    idx <- c(rep(NA, n.lod), seq_along(measured.values))
+    x <- c(rep(lod-1, n.lod), measured.values)
+    
+    if (length(x) < n.min.values){
+        return(list(selected.values=NA, selected.values.index=NA, upper.truncation=NA, median=NA, lod=lod, n.lod=n.lod))
+    }
+    
+    x.qmr <- quantile(x, probs=c(0.5, right.quantile))
+    upper.truncation <- x.qmr[1] + (x.qmr[2]-x.qmr[1])*quantile.factor
+    
+    x.length.old <- length(x)
+    keep <- x <= upper.truncation
+    x <- x[keep]
+    idx <- idx[keep]
+    
+    if (length(x) < n.min.values){
+        return(list(selected.values=NA, selected.values.index=NA, upper.truncation=NA, median=NA, lod=lod, n.lod=n.lod))
+    }
+    
+    if (length(x) == x.length.old){
+        return(list(selected.values=x[-(1:n.lod)], selected.values.index=idx[-(1:n.lod)], upper.truncation=upper.truncation, median=x.qmr[1], lod=lod, n.lod=n.lod))
+    }
+    
+    median.mod <- 0.5/0.975
+    right.quantile.mod <- right.quantile/0.975
+    
+    while(length(x) < x.length.old){
+        x.length.old <- length(x)
+        x.qmr <- quantile(x, probs=c(median.mod, right.quantile.mod))
+        upper.truncation <- x.qmr[1] + (x.qmr[2]-x.qmr[1])*quantile.factor
+        
+        keep <- x <= upper.truncation
+        x <- x[keep]
+        idx <- idx[keep]
+        
+        if (length(x) < n.min.values){
+            return(list(selected.values=NA, selected.values.index=NA, upper.truncation=NA, median=NA, lod=lod, n.lod=n.lod))
+        }
+    }  
+    
+    return(list(selected.values=x[-(1:n.lod)], selected.values.index=idx[-(1:n.lod)], upper.truncation=upper.truncation, median=x.qmr[1], lod=lod, n.lod=n.lod))
+}
+
+box.cox.inv.trans <- function(x,lambda=1){
+    if (lambda==0){
+        return(exp(x))
+    }else{
+        return((x*lambda + 1)^(1/lambda))
+    }
 }
 
 #' reflimR_Sliding
