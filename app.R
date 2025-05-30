@@ -1,4 +1,4 @@
-#MLE-3
+#new_iboxplot
 
 
 ####################################### WEILCOME TO THE SHINY APP ###########################################
@@ -462,19 +462,19 @@ server <- function(input, output, session) {
         
         
         result <- tryCatch({
-            print(
-                paste(
-                    "------------Input values:",
-                    "window_size:",
-                    window_size,
-                    "step_width:",
-                    step_width,
-                    "standard_deviation:",
-                    standard_deviation,
-                    "------------"
-                )
-            )
             if (input$distribution == "truncated_gaussian") {
+                print(
+                    paste(
+                        "------------Input values:",
+                        "window_size:",
+                        window_size,
+                        "step_width:",
+                        step_width,
+                        "standard_deviation:",
+                        standard_deviation,
+                        "------------"
+                    )
+                )
                 res <- w_sliding.reflim.plot(
                     user_x,
                     user_t,
@@ -486,6 +486,18 @@ server <- function(input, output, session) {
                     verbose = show_more_info()
                 )
             } else if (input$distribution == "gaussian") {
+                print(
+                    paste(
+                        "------------Input values:",
+                        "window_size:",
+                        window_size,
+                        "step_width:",
+                        step_width,
+                        "standard_deviation:",
+                        standard_deviation,
+                        "------------"
+                    )
+                )
                 res <- w_sliding.reflim.plot(
                     user_x,
                     user_t,
@@ -497,6 +509,18 @@ server <- function(input, output, session) {
                     verbose = show_more_info()
                 )
             } else if (input$distribution == "triangular") {
+                print(
+                    paste(
+                        "------------Input values:",
+                        "window_size:",
+                        window_size,
+                        "step_width:",
+                        step_width,
+                        "vertex:",
+                        vertex1,
+                        "------------"
+                    )
+                )
                 res <- w_sliding.reflim.plot(
                     user_x,
                     user_t,
@@ -508,6 +532,20 @@ server <- function(input, output, session) {
                     verbose = show_more_info()
                 )
             } else if (input$distribution == "trapezoidal") {
+                print(
+                    paste(
+                        "------------Input values:",
+                        "window_size:",
+                        window_size,
+                        "step_width:",
+                        step_width,
+                        "vertex1:",
+                        vertex1_trap,
+                        "vertex2:",
+                        vertex2_trap,
+                        "------------"
+                    )
+                )
                 res <- w_sliding.reflim.plot(
                     user_x,
                     user_t,
