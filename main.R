@@ -1,4 +1,4 @@
-#MLE-3
+#new_iboxplot
 
 # source("stats-3200273-supplementary.R")
 
@@ -895,7 +895,7 @@ w_sliding.reflim <- function(x,covariate,distribution = "truncated_gaussian", st
             }
             
             if (!MLE) {
-                print("not MLE method")
+                # print("not MLE method")
                 res.reflim <- w_reflim(xx, www, n.min = n.min, apply.rounding = apply.rounding, lognormal = lognormal, plot.all = FALSE)
             
                 lower.lim[i] <- res.reflim$limits[1]
@@ -1807,42 +1807,70 @@ w_iboxplot <- function(x, x_weight, lognormal = NULL, perc.trunc = 2.5,
     if (lognormal) {
         x_clean <- log(x_clean)
     }
+    
+    if (is.null(perc.trunc) || perc.trunc <= 0 || perc.trunc > 25) {
+        stop("perc.trunc must not be NULL, negative, zero, or greater than 25.")
+    }
+    
     q.trunc <- perc.trunc/100
-    w_truncate_x <- function(x, x_weight, i) {
-        qf <- ifelse(i == 1, qf <- qnorm(q.trunc) / qnorm(0.25),
-                    qf <- qnorm(q.trunc) / qnorm(0.25 * (1 - 2 * q.trunc)
-                                                + q.trunc))
-        
-        if (all(x_weight == 0)) {
-            warning("All weights are zero. Use equal weights.")
-            x_weight <- rep(1/length(x), length(x))
-        }
-        # print("x:")
-        # print(x)
-        # print("x_weight:")
-        # print(x_weight)
+    # w_truncate_x <- function(x, x_weight, i) {
+    #     qf <- ifelse(i == 1, qf <- qnorm(q.trunc) / qnorm(0.25),
+    #                 qf <- qnorm(q.trunc) / qnorm(0.25 * (1 - 2 * q.trunc)
+    #                                             + q.trunc))
+    #     
+    #     if (all(x_weight == 0)) {
+    #         warning("All weights are zero. Use equal weights.")
+    #         x_weight <- rep(1/length(x), length(x))
+    #     }
+    #     # print("x:")
+    #     # print(x)
+    #     # print("x_weight:")
+    #     # print(x_weight)
+    #     Q <- wtd.quantile(x, x_weight, c(0.25, 0.5, 0.75))
+    #     var1 <- Q[2] - Q[1]
+    #     var2 <- Q[3] - Q[2]
+    #     var <- min(var1, var2)
+    #     lim <- c(Q[2] - qf * var, Q[2] + qf * var)
+    #     indices <- which(x >= lim[1] & x <= lim[2])
+    #     return(list(x = x[indices], x_weight = x_weight[indices]))
+    # }
+    w_truncate_x <- function(x, x_weight, qf) {
         Q <- wtd.quantile(x, x_weight, c(0.25, 0.5, 0.75))
         var1 <- Q[2] - Q[1]
         var2 <- Q[3] - Q[2]
         var <- min(var1, var2)
         lim <- c(Q[2] - qf * var, Q[2] + qf * var)
-        indices <- which(x >= lim[1] & x <= lim[2])
-        return(list(x = x[indices], x_weight = x_weight[indices]))
+        idx <- which(x >= lim[1] & x <= lim[2])
+        return(list(x = x[idx], x_weight = x_weight[idx]))
     }
+    
     print.progress <- function(x, x_weight, lognormal = FALSE) {
         if (lognormal) {
             x <- exp(x)
         }
         return(c(length(x), min(x), max(x), length(x_weight)))
     }
+    
+    n.steps <- 5
+    for (i in 1:n.steps) {
+        target.quantile <- 1 - q.trunc * i / n.steps
+        alpha <- (2 * q.trunc) * (i - 1) / n.steps
+        qf <- qnorm(target.quantile)/qnorm(0.75 - 0.25 * alpha)
+        
+        result <- w_truncate_x(x_clean, ww_clean, qf)
+        x_clean <- result$x
+        ww_clean <- result$x_weight
+        progress <- rbind(progress, print.progress(x_clean, ww_clean, lognormal = lognormal))
+    }
 
     n0 <- 1
     n1 <- 0
-    i <- 0
+    # i <- 0
+    qf <- qnorm(1 - q.trunc)/qnorm(0.75 - 0.25 * q.trunc)
     while (n0 > n1) {
         i <- i + 1
         n0 <- length(x_clean)
-        result <- w_truncate_x(x_clean, ww_clean, i)
+        result <- w_truncate_x(x_clean, ww_clean, qf)
         x_clean <- result$x
         ww_clean <- result$x_weight
         n1 <- length(x_clean)
