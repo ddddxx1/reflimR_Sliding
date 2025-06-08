@@ -986,8 +986,8 @@ w_sliding.reflim <- function(x,covariate,distribution = "truncated_gaussian", st
                     next
                 }
                 
-                lower.lim[i] <- res.reflim$lower.limit
-                upper.lim[i] <- res.reflim$upper.limit
+                lower.lim[i] <- round(res.reflim$lower.limit, 4)
+                upper.lim[i] <- round(res.reflim$upper.limit, 4)
                 ci.lower.lim.l[i] <- res.reflim$lower.limit
                 ci.lower.lim.u[i] <- res.reflim$lower.limit
                 ci.upper.lim.l[i] <- res.reflim$upper.limit
@@ -1106,8 +1106,8 @@ w_sliding.reflim <- function(x,covariate,distribution = "truncated_gaussian", st
                     } else {
                         res.reflim <- MLE(xxx, www, verbose = verbose)
                         
-                        lower.lim[i] <- res.reflim$lower.limit
-                        upper.lim[i] <- res.reflim$upper.limit
+                        lower.lim[i] <- round(res.reflim$lower.limit, 4)
+                        upper.lim[i] <- round(res.reflim$upper.limit, 4)
                         ci.lower.lim.l[i] <- res.reflim$lower.limit
                         ci.lower.lim.u[i] <- res.reflim$lower.limit
                         ci.upper.lim.l[i] <- res.reflim$upper.limit
@@ -1222,8 +1222,8 @@ w_sliding.reflim <- function(x,covariate,distribution = "truncated_gaussian", st
                     } else {
                         res.reflim <- MLE(xxx, www, verbose = verbose)
                         
-                        lower.lim[ind] <- res.reflim$lower.limit
-                        upper.lim[ind] <- res.reflim$upper.limit
+                        lower.lim[ind] <- round(res.reflim$lower.limit, 4)
+                        upper.lim[ind] <- round(res.reflim$upper.limit, 4)
                         ci.lower.lim.l[ind] <- res.reflim$lower.limit
                         ci.lower.lim.u[ind] <- res.reflim$lower.limit
                         ci.upper.lim.l[ind] <- res.reflim$upper.limit

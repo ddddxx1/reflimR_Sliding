@@ -932,6 +932,7 @@ server <- function(input, output, session) {
     })
     
     observeEvent(input$compare, {
+        showNotification("Comparing reference limits...", type = "message", duration = 3)
         if (show_more_info() == TRUE)
         print("Use comparison feature.")
         user_data <- reactive_data()
